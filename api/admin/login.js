@@ -1,0 +1,3 @@
+import crypto from 'node:crypto';
+import {sessionCookie} from './_auth.js';
+export default function handler(req,res){if(req.method!=='POST')return res.status(405).end();const expected=process.env.ADMIN_PASSWORD||'',provided=String(req.body?.password||'');if(!expected)return res.status(503).json({error:'A senha administrativa não está configurada neste ambiente.'});if(provided.length!==expected.length||!crypto.timingSafeEqual(Buffer.from(provided),Buffer.from(expected)))return res.status(401).json({error:'Senha incorreta.'});res.setHeader('Set-Cookie',sessionCookie());res.status(200).json({ok:true});}

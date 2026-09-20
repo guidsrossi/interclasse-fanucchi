@@ -1,0 +1,24 @@
+body:has(.draw-presentation[open]){overflow:hidden}
+.draw-presentation,.draw-presentation:fullscreen{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;overflow:hidden}
+.draw-presentation:fullscreen::backdrop{background:#f6f8fc}
+.draw-presentation #draw-slide{height:calc(100vh - 86px);height:calc(100dvh - 86px);overflow:hidden}
+.draw-presentation .draw-slide{height:100%;min-height:0;overflow:hidden}
+.draw-presentation .suspense-arena{grid-template-columns:minmax(280px,1fr) minmax(380px,1.15fr) minmax(280px,1fr)}
+.draw-presentation .team-identity img{background:transparent;border-radius:0}
+.team-identity.featured img{display:block;width:min(210px,18vh);height:min(180px,16vh);object-fit:contain;border-radius:0;background:transparent}
+.team-identity.featured .team-name{font-size:21px;color:#0b3b7b}
+.team-identity.featured:not(.has-logo) .team-name{font:800 clamp(46px,4vw,72px) 'Space Grotesk',sans-serif}
+.team-identity.logo-failed .team-name{display:block!important}
+.team-identity.logo-failed img{display:none!important}
+.reveal-card:has(.team-identity.featured.has-logo){min-height:min(260px,27vh)}
+.draw-machine.is-announcing{overflow:visible;background:radial-gradient(circle,#dbeaff 0,#eef5ff 45%,transparent 72%)}
+.reveal-card.is-announcing{width:min(430px,30vw);min-height:min(450px,46vh);padding:8px;border:0;background:transparent;box-shadow:none}
+.reveal-card.is-announcing small{font-size:17px;letter-spacing:3px;margin-bottom:6px}
+.team-identity.spotlight{display:flex;flex-direction:column;gap:8px;animation:spotlightReveal 1.9s cubic-bezier(.18,.82,.2,1) both}
+.team-identity.spotlight img{display:block;width:min(380px,28vw);height:min(370px,36vh);object-fit:contain;background:transparent;filter:drop-shadow(0 22px 22px #15396435)}
+.team-identity.spotlight .team-name{font:800 clamp(25px,2.2vw,38px) 'Space Grotesk',sans-serif;color:#0b3b7b;text-shadow:0 2px #fff}
+.team-identity.spotlight:not(.has-logo) .team-name{font-size:clamp(70px,8vw,140px)}
+.draw-presentation>footer{position:absolute;left:0;right:0;bottom:0;margin:0}
+@keyframes spotlightReveal{0%{opacity:0;transform:scale(.58) rotate(-4deg)}18%{opacity:1;transform:scale(1.08) rotate(1deg)}72%{opacity:1;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(.52) translateY(70px)}}
+@media(max-height:850px) and (min-width:901px){.draw-slide{padding-top:22px;padding-bottom:18px}.draw-slide>header{padding-bottom:13px}.draw-slide header h2{font-size:38px}.presentation-entrants{padding:10px 0}.suspense-arena{min-height:0;height:calc(100vh - 245px);height:calc(100dvh - 245px)}.group-title{padding-bottom:8px;margin-bottom:8px}.group-title h3{font-size:28px}.group-slots{gap:5px}.group-slot{min-height:44px;padding:5px 9px}.group-slot.with-logo{min-height:58px}.team-identity.group img{width:43px;height:43px}.reveal-card{min-height:145px}.team-identity.featured img{width:145px;height:110px}.orbit-one{width:220px;height:220px}.orbit-two{width:170px;height:170px}}
+@media(max-width:900px){.draw-presentation #draw-slide{overflow:auto}.draw-presentation .draw-slide{height:auto;min-height:100%}}
