@@ -29,13 +29,14 @@ export default async function handler(req,res){
  }else if(event_name||division)return res.status(400).json({error:'Esta modalidade não possui prova ou categoria.'});
  const capacity=modalities[0].capacity;
  if(capacity!==null){
-  const countResponse=await fetch(`${url}/rest/v1/interclasse_registrations?modality_id=eq.${encodeURIComponent(modality_id)}&class_name=eq.${encodeURIComponent(class_name)}&id=neq.${id}&select=id`,{headers:{...headers(key),Prefer:'count=exact'}});
+  const athleticsScope=modality_id==='atletismo'?`&event_name=eq.${encodeURIComponent(event_name)}&division=eq.${encodeURIComponent(division)}`:'';
+  const countResponse=await fetch(`${url}/rest/v1/interclasse_registrations?modality_id=eq.${encodeURIComponent(modality_id)}&class_name=eq.${encodeURIComponent(class_name)}&id=neq.${id}${athleticsScope}&select=id`,{headers:{...headers(key),Prefer:'count=exact'}});
   const count=Number((countResponse.headers.get('content-range')||'0/0').split('/')[1]);
-  if(count>=capacity)return res.status(409).json({error:'As vagas desta modalidade para a turma foram preenchidas.'});
+  if(count>=capacity)return res.status(409).json({error:modality_id==='atletismo'?'As vagas desta prova e categoria para a turma foram preenchidas.':'As vagas desta modalidade para a turma foram preenchidas.'});
  }
  const response=await fetch(`${url}/rest/v1/interclasse_registrations?id=eq.${id}`,{method:'PATCH',headers:{...headers(key),Prefer:'return=representation'},body:JSON.stringify({student_name,class_name,modality_id,event_name:modality_id==='atletismo'?event_name:null,division:modality_id==='atletismo'?division:null})});
  const data=await response.json();
- if(!response.ok){const duplicate=response.status===409||String(data?.message||'').includes('unique');return res.status(duplicate?409:502).json({error:duplicate?'Este aluno já está inscrito nesta modalidade e turma.':'Não foi possível editar o cadastro.'});}
+ if(!response.ok){const duplicate=response.status===409||String(data?.message||'').includes('unique');return res.status(duplicate?409:502).json({error:duplicate?(modality_id==='atletismo'?'Este aluno já está inscrito nesta prova e categoria.':'Este aluno já está inscrito nesta modalidade e turma.'):'Não foi possível editar o cadastro.'});}
  if(!data.length)return res.status(404).json({error:'Cadastro não encontrado.'});
  res.status(200).json(data[0]);
 }
