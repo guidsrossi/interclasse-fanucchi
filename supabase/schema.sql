@@ -11,7 +11,7 @@ create table if not exists public.interclasse_registrations (
  id uuid primary key default gen_random_uuid(),
  modality_id text not null references public.interclasse_modalities(id),
  student_name text not null check(char_length(student_name) between 3 and 100),
- class_name text not null check(class_name ~ '^[123]º [A-Z]$'),
+ class_name text not null check(class_name ~ '^[123]º [A-Z]$' and class_name <> '2º E'),
  event_name text,
  division text,
  created_at timestamptz not null default now()
@@ -41,7 +41,7 @@ begin
  if coalesce(registrations_are_open,false)=false then raise exception 'As inscrições estão temporariamente fechadas.'; end if;
  clean_name := regexp_replace(btrim(p_name),'\s+',' ','g');
  if clean_name is null or char_length(clean_name) not between 3 and 100 then raise exception 'Digite um nome entre 3 e 100 caracteres.'; end if;
- if p_class is null or p_class !~ '^[123]º [A-Z]$' then raise exception 'Informe a turma no formato 3º A.'; end if;
+ if p_class is null or p_class !~ '^[123]º [A-Z]$' or p_class='2º E' then raise exception 'Selecione uma turma existente.'; end if;
  select capacity into maximum from public.interclasse_modalities where id=p_modality for update;
  if not found then raise exception 'Modalidade inválida.'; end if;
  if p_modality='atletismo' then
@@ -83,7 +83,7 @@ revoke all on public.interclasse_draws from anon,authenticated;
 
 create table if not exists public.interclasse_score_entries (
  id uuid primary key default gen_random_uuid(),
- class_name text not null check(class_name ~ '^[123]º [A-Z]$'),
+ class_name text not null check(class_name ~ '^[123]º [A-Z]$' and class_name <> '2º E'),
  modality_id text references public.interclasse_modalities(id),
  entry_type text not null check(entry_type in ('resultado','frequencia','plataforma','bonus','penalidade','ajuste')),
  label text not null check(char_length(label) between 3 and 120),
@@ -112,7 +112,7 @@ begin
  if p_entries is null or jsonb_typeof(p_entries) <> 'array' or jsonb_array_length(p_entries) not between 1 and 30 then raise exception 'Envie entre 1 e 30 turmas.'; end if;
  for item in select value from jsonb_array_elements(p_entries) loop
   imported_class := upper(btrim(item->>'class_name')); imported_rate := (item->>'attendance_rate')::numeric(5,2);
-  if imported_class is null or imported_class !~ '^[123]º [A-Z]$' then raise exception 'Turma inválida no relatório.'; end if;
+  if imported_class is null or imported_class !~ '^[123]º [A-Z]$' or imported_class='2º E' then raise exception 'Turma inexistente no relatório.'; end if;
   if imported_rate is null or imported_rate < 0 or imported_rate > 100 then raise exception 'Percentual de presença inválido para a turma %.',imported_class; end if;
  end loop;
  delete from public.interclasse_score_entries where entry_type='frequencia' and attendance_week=p_week_start;
@@ -130,7 +130,7 @@ grant execute on function public.interclasse_import_weekly_attendance(date,jsonb
 
 create table if not exists public.interclasse_students (
  id uuid primary key default gen_random_uuid(),
- class_name text not null check(class_name ~ '^[123]º [A-Z]$'),
+ class_name text not null check(class_name ~ '^[123]º [A-Z]$' and class_name <> '2º E'),
  student_name text not null check(char_length(student_name) between 3 and 100),
  created_at timestamptz not null default now()
 );

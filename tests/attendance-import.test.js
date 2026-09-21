@@ -42,7 +42,8 @@ test("interpreta o formato da planilha semanal e informa turmas ausentes", () =>
     { className: "2º B", attendanceRate: 94.87, points: 15 },
     { className: "3º A", attendanceRate: 96.23, points: 20 },
   ]);
-  assert.equal(parsed.missingClasses.length, 13);
+  assert.equal(parsed.missingClasses.length, 12);
+  assert.ok(!parsed.missingClasses.includes("2º E"));
   assert.deepEqual(parsed.ignoredRows, []);
 });
 

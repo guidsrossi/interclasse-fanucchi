@@ -1,4 +1,5 @@
 import {authorized} from './_auth.js';
+import {isSchoolClass} from '../../src/school-classes.js';
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const room=/^[123]º [A-Z]$/;
@@ -21,7 +22,7 @@ export default async function handler(req,res){
  }
  const student_name=String(req.body?.student_name||'').trim().replace(/\s+/g,' '),class_name=String(req.body?.class_name||'').trim().toUpperCase(),modality_id=String(req.body?.modality_id||''),event_name=req.body?.event_name||null,division=req.body?.division||null;
  if(student_name.length<3||student_name.length>100)return res.status(400).json({error:'Digite um nome entre 3 e 100 caracteres.'});
- if(!room.test(class_name))return res.status(400).json({error:'Informe a turma no formato 3º A.'});
+ if(!room.test(class_name)||!isSchoolClass(class_name))return res.status(400).json({error:'Selecione uma turma existente.'});
  const modalitiesResponse=await fetch(`${url}/rest/v1/interclasse_modalities?id=eq.${encodeURIComponent(modality_id)}&select=capacity`,{headers:headers(key)}),modalities=await modalitiesResponse.json();
  if(!modalitiesResponse.ok||!modalities.length)return res.status(400).json({error:'Modalidade inválida.'});
  if(modality_id==='atletismo'){

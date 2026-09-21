@@ -1,3 +1,5 @@
+import { isSchoolClass } from "./school-classes.js";
+
 export const modalities = [
  {id:'futebol',image:'/mascote-futebol.jpeg',name:'Futsal masculino',category:'Coletivos',leader:'Thiago',class:'3º B',limit:10,icon:'⚽'},
  {id:'futsal',image:'/mascote-futsal.jpeg',name:'Futsal misto',category:'Coletivos',leader:'Melli',class:'3º B',limit:10,icon:'⚽'},
@@ -17,4 +19,4 @@ export const modalities = [
  {id:'repassa',image:'/mascote-repassa.jpeg',name:'Passa ou repassa',category:'Conhecimentos e inclusão',leader:'Luana',class:'3º D',limit:4,icon:'💡',description:'Conhecimentos gerais para representar sua turma.'}
 ];
 export function normalizeClass(value){ return value.trim().toUpperCase().replace(/^([123])\s*[°ºo]?\s*([A-Z])$/i,'$1º $2'); }
-export function validateRegistration(name,room){if(name.trim().length<3||name.trim().length>100)return 'Digite um nome entre 3 e 100 caracteres.';if(!/^[123]º [A-Z]$/.test(normalizeClass(room)))return 'Informe a turma no formato 3º A.';return null;}
+export function validateRegistration(name,room){if(name.trim().length<3||name.trim().length>100)return 'Digite um nome entre 3 e 100 caracteres.';if(!isSchoolClass(normalizeClass(room)))return 'Selecione uma turma existente.';return null;}

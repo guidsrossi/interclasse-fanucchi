@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { clearTeacherCookie, teacherAuthorized, teacherSessionCookie } from "./admin/_auth.js";
+import { isSchoolClass } from "../src/school-classes.js";
 
 const room = /^[123]º [A-Z]$/;
 const headers = (key) => ({ "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` });
@@ -27,7 +28,7 @@ async function absence(req, res, url, key) {
   if (!teacherAuthorized(req)) return res.status(401).json({ error: "Não autorizado." });
   const className = clean(req.body?.class_name).toUpperCase();
   const studentName = clean(req.body?.student_name);
-  if (!room.test(className) || studentName.length < 3 || studentName.length > 100) return res.status(400).json({ error: "Selecione uma turma e um estudante válidos." });
+  if (!room.test(className) || !isSchoolClass(className) || studentName.length < 3 || studentName.length > 100) return res.status(400).json({ error: "Selecione uma turma e um estudante válidos." });
   const studentResponse = await fetch(`${url}/rest/v1/interclasse_students?class_name=eq.${encodeURIComponent(className)}&student_name=ilike.${encodeURIComponent(studentName)}&select=id&limit=1`, { headers: headers(key) });
   const matches = await studentResponse.json();
   if (!studentResponse.ok || !matches.length) return res.status(404).json({ error: "Estudante não encontrado nesta turma." });

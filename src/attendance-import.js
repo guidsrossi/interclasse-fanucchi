@@ -1,6 +1,6 @@
-export const attendanceClasses = Object.freeze(
-  [1, 2, 3].flatMap((year) => ["A", "B", "C", "D", "E"].map((letter) => `${year}º ${letter}`)),
-);
+import { isSchoolClass, schoolClasses } from "./school-classes.js";
+
+export const attendanceClasses = schoolClasses;
 
 const cleanText = (value) => String(value ?? "")
   .normalize("NFD")
@@ -70,7 +70,7 @@ export function parseAttendanceRows(rows) {
     if ((rawClass === null || rawClass === undefined || rawClass === "") && (rawRate === null || rawRate === undefined || rawRate === "")) continue;
     const className = classNameFromReport(rawClass);
     const attendanceRate = normalizeAttendanceRate(rawRate);
-    if (!className || attendanceRate === null) {
+    if (!className || !isSchoolClass(className) || attendanceRate === null) {
       if (rawRate !== null && rawRate !== undefined && rawRate !== "") ignored.push(index + 1);
       continue;
     }

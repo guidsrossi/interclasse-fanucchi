@@ -1,5 +1,6 @@
 import { authorized } from "./_auth.js";
 import { normalizeAttendanceRate } from "../../src/attendance-import.js";
+import { isSchoolClass } from "../../src/school-classes.js";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const room = /^[123]º [A-Z]$/;
@@ -19,7 +20,7 @@ function weeklyAttendancePayload(body = {}) {
   const entries = body.entries.map((entry) => {
     const className = String(entry?.className || entry?.class_name || "").trim().toUpperCase();
     const attendanceRate = normalizeAttendanceRate(entry?.attendanceRate ?? entry?.attendance_rate);
-    if (!room.test(className)) throw Error("A planilha contém uma turma inválida.");
+    if (!room.test(className) || !isSchoolClass(className)) throw Error("A planilha contém uma turma inexistente.");
     if (attendanceRate === null) throw Error(`A frequência da turma ${className} é inválida.`);
     if (seen.has(className)) throw Error(`A turma ${className} aparece mais de uma vez na planilha.`);
     seen.add(className);
@@ -40,7 +41,7 @@ function payload(body = {}) {
     losses: Number(body.losses || 0),
     updated_at: new Date().toISOString(),
   };
-  if (!room.test(item.class_name)) throw Error("Informe uma turma válida.");
+  if (!room.test(item.class_name) || !isSchoolClass(item.class_name)) throw Error("Informe uma turma existente.");
   if (!types.has(item.entry_type)) throw Error("Escolha um tipo de lançamento válido.");
   if (item.label.length < 3 || item.label.length > 120) throw Error("Descreva o lançamento entre 3 e 120 caracteres.");
   if (![item.points, item.wins, item.draws, item.losses].every(Number.isInteger)) throw Error("Pontos e resultados devem ser números inteiros.");
