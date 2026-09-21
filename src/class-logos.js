@@ -5,7 +5,7 @@ export const classLogos = Object.freeze({
   "3º B": "/class-logos/3b-cavalo.png",
   "3º C": "/class-logos/3c-zeus.png",
   "3º D": "/class-logos/3d-dragao.png",
-  "3º E": "/class-logos/3e-anubis.png",
+  "3º E": "/class-logos/3e-anubis-circle.png",
 });
 
 export const logoForClass = (className) => classLogos[className] || null;

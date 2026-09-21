@@ -1,9 +1,32 @@
 import { authorized } from "./_auth.js";
+import { normalizeAttendanceRate } from "../../src/attendance-import.js";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const room = /^[123]º [A-Z]$/;
 const types = new Set(["resultado", "frequencia", "plataforma", "bonus", "penalidade", "ajuste"]);
 const headers = (key) => ({ "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` });
+
+function weeklyAttendancePayload(body = {}) {
+  const weekStart = String(body.weekStart || "");
+  const weekDate = new Date(`${weekStart}T12:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart) || Number.isNaN(weekDate.getTime()) || weekDate.getUTCDay() !== 1) {
+    throw Error("Escolha a segunda-feira da semana da frequência.");
+  }
+  if (!Array.isArray(body.entries) || body.entries.length < 1 || body.entries.length > 30) {
+    throw Error("A planilha deve conter entre 1 e 30 turmas.");
+  }
+  const seen = new Set();
+  const entries = body.entries.map((entry) => {
+    const className = String(entry?.className || entry?.class_name || "").trim().toUpperCase();
+    const attendanceRate = normalizeAttendanceRate(entry?.attendanceRate ?? entry?.attendance_rate);
+    if (!room.test(className)) throw Error("A planilha contém uma turma inválida.");
+    if (attendanceRate === null) throw Error(`A frequência da turma ${className} é inválida.`);
+    if (seen.has(className)) throw Error(`A turma ${className} aparece mais de uma vez na planilha.`);
+    seen.add(className);
+    return { class_name: className, attendance_rate: attendanceRate };
+  });
+  return { p_week_start: weekStart, p_entries: entries };
+}
 
 function payload(body = {}) {
   const item = {
@@ -36,6 +59,18 @@ export default async function handler(req, res) {
     if (!response.ok) return res.status(502).json({ error: "Não foi possível consultar o ranking." });
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).json(await response.json());
+  }
+  if (req.method === "POST" && req.body?.action === "weeklyAttendance") {
+    let weekly;
+    try { weekly = weeklyAttendancePayload(req.body); } catch (error) { return res.status(400).json({ error: error.message }); }
+    const response = await fetch(`${url}/rest/v1/rpc/interclasse_import_weekly_attendance`, {
+      method: "POST",
+      headers: { ...headers(key), Prefer: "return=representation" },
+      body: JSON.stringify(weekly),
+    });
+    const data = await response.json();
+    if (!response.ok) return res.status(502).json({ error: data?.message || "Não foi possível importar a frequência semanal." });
+    return res.status(200).json({ imported: data.length, entries: data });
   }
   const id = String(req.body?.id || "");
   if (["PATCH", "DELETE"].includes(req.method) && !uuid.test(id)) return res.status(400).json({ error: "Lançamento inválido." });

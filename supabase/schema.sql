@@ -93,13 +93,40 @@ create table if not exists public.interclasse_score_entries (
  losses integer not null default 0 check(losses between 0 and 999),
  responsible_student text check(responsible_student is null or char_length(responsible_student) between 3 and 100),
  source text not null default 'admin' check(source in ('admin','teacher')),
+ attendance_week date,
+ attendance_rate numeric(5,2) check(attendance_rate is null or attendance_rate between 0 and 100),
  created_at timestamptz not null default now(),
  updated_at timestamptz not null default now()
 );
 create index if not exists interclasse_score_entries_class_idx on public.interclasse_score_entries(class_name,updated_at desc);
 create index if not exists interclasse_score_entries_teacher_idx on public.interclasse_score_entries(source,created_at desc);
+create unique index if not exists interclasse_score_entries_weekly_attendance_idx on public.interclasse_score_entries(class_name,entry_type,attendance_week);
 alter table public.interclasse_score_entries enable row level security;
 revoke all on public.interclasse_score_entries from anon,authenticated;
+
+create or replace function public.interclasse_import_weekly_attendance(p_week_start date,p_entries jsonb)
+returns setof public.interclasse_score_entries language plpgsql security definer set search_path = '' as $$
+declare item jsonb; imported_class text; imported_rate numeric(5,2); imported_points integer;
+begin
+ if p_week_start is null or extract(isodow from p_week_start) <> 1 then raise exception 'A semana deve começar em uma segunda-feira.'; end if;
+ if p_entries is null or jsonb_typeof(p_entries) <> 'array' or jsonb_array_length(p_entries) not between 1 and 30 then raise exception 'Envie entre 1 e 30 turmas.'; end if;
+ for item in select value from jsonb_array_elements(p_entries) loop
+  imported_class := upper(btrim(item->>'class_name')); imported_rate := (item->>'attendance_rate')::numeric(5,2);
+  if imported_class is null or imported_class !~ '^[123]º [A-Z]$' then raise exception 'Turma inválida no relatório.'; end if;
+  if imported_rate is null or imported_rate < 0 or imported_rate > 100 then raise exception 'Percentual de presença inválido para a turma %.',imported_class; end if;
+ end loop;
+ delete from public.interclasse_score_entries where entry_type='frequencia' and attendance_week=p_week_start;
+ for item in select value from jsonb_array_elements(p_entries) loop
+  imported_class := upper(btrim(item->>'class_name')); imported_rate := (item->>'attendance_rate')::numeric(5,2);
+  imported_points := case when imported_rate>=100 then 25 when imported_rate>=95 then 20 when imported_rate>=90 then 15 when imported_rate>=85 then 10 else 0 end;
+  insert into public.interclasse_score_entries(class_name,entry_type,label,points,wins,draws,losses,attendance_week,attendance_rate,source)
+  values(imported_class,'frequencia','Frequência semanal · '||to_char(p_week_start,'DD/MM/YYYY')||' · '||replace(to_char(imported_rate,'FM990D00'),'.',',')||'%',imported_points,0,0,0,p_week_start,imported_rate,'admin');
+ end loop;
+ return query select entry.* from public.interclasse_score_entries entry where entry.entry_type='frequencia' and entry.attendance_week=p_week_start order by entry.class_name;
+end;
+$$;
+revoke all on function public.interclasse_import_weekly_attendance(date,jsonb) from public;
+grant execute on function public.interclasse_import_weekly_attendance(date,jsonb) to service_role;
 
 create table if not exists public.interclasse_students (
  id uuid primary key default gen_random_uuid(),
