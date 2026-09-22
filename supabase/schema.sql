@@ -81,6 +81,14 @@ create table if not exists public.interclasse_draws (
 alter table public.interclasse_draws enable row level security;
 revoke all on public.interclasse_draws from anon,authenticated;
 
+create table if not exists public.interclasse_competition_results (
+ competition_id text primary key check(char_length(competition_id) between 1 and 180),
+ payload jsonb not null default '{"version":1,"matches":{}}'::jsonb,
+ updated_at timestamptz not null default now()
+);
+alter table public.interclasse_competition_results enable row level security;
+revoke all on public.interclasse_competition_results from anon,authenticated;
+
 create table if not exists public.interclasse_score_entries (
  id uuid primary key default gen_random_uuid(),
  class_name text not null check(class_name ~ '^[123]º [A-Z]$' and class_name <> '2º E'),

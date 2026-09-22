@@ -13,6 +13,7 @@ test('logos cadastradas apontam para arquivos públicos existentes',()=>{
 
 test('turmas sem logo continuam sem substituição visual',()=>{
  assert.equal(logoForClass('3º A'),null);
+ assert.match(logoForClass('1º E'),/1e-onca\.png$/);
  assert.match(logoForClass('2º A'),/2a-segundao\.png$/);
  assert.match(logoForClass('3º C'),/3c-zeus\.png$/);
  assert.match(logoForClass('3º D'),/3d-dragao\.png$/);
