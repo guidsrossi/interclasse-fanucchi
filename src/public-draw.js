@@ -3,6 +3,7 @@ import { logoForClass } from "./class-logos.js";
 import "./public-draw.css";
 import "./public-results.css";
 import "./component-layout-fixes.css";
+import "./manual-advancement.css";
 import { assetUrl, recoverImage } from "./assets.js";
 import { competitionProgress } from "./competition-results.js";
 
@@ -23,7 +24,7 @@ function playedMatch(match) {
   const result = match.result || {};
   const complete = match.complete;
   const scorers = (result.scorers || []).map((item) => `<span>${esc(item.studentName)} <b>${item.points || 1}</b></span>`).join("");
-  return `<article class="public-result-match ${complete ? "is-complete" : ""}"><header><span>${esc(match.phase)}</span><b>${complete ? "ENCERRADO" : "A JOGAR"}</b></header><div><span>${team(match.home)}</span><strong>${complete ? result.homeScore : "–"}<i>×</i>${complete ? result.awayScore : "–"}</strong><span>${team(match.away)}</span></div>${complete && match.knockout && result.homeScore === result.awayScore ? `<p>Pênaltis: ${result.homePenalty} × ${result.awayPenalty}</p>` : ""}${scorers ? `<footer>${scorers}</footer>` : ""}</article>`;
+  return `<article class="public-result-match ${complete ? "is-complete" : ""}"><header><span>${esc(match.phase)}</span><b>${complete ? "ENCERRADO" : "A JOGAR"}</b></header><div><span>${team(match.home)}</span><strong>${complete ? result.homeScore : "–"}<i>×</i>${complete ? result.awayScore : "–"}</strong><span>${team(match.away)}</span></div>${complete && match.knockout && result.homePenalty !== undefined ? `<p>Pênaltis: ${result.homePenalty} × ${result.awayPenalty}</p>` : ""}${complete && match.knockout ? `<p class="public-advanced">Classificado: <strong>${esc(result.advancedTeam)}</strong></p>` : ""}${scorers ? `<footer>${scorers}</footer>` : ""}</article>`;
 }
 
 function standingsMarkup(progress) {

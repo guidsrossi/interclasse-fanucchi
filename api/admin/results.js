@@ -16,10 +16,16 @@ function competitionMeta(competitionId) {
 export function normalizeMatchResult(input, match, students) {
   if (!nonNegativeInteger(input?.homeScore) || !nonNegativeInteger(input?.awayScore)) throw Error("Informe placares inteiros entre 0 e 999.");
   const result = { homeScore: Number(input.homeScore), awayScore: Number(input.awayScore), scorers: [] };
-  if (match.knockout && result.homeScore === result.awayScore) {
-    if (!nonNegativeInteger(input.homePenalty) || !nonNegativeInteger(input.awayPenalty) || Number(input.homePenalty) === Number(input.awayPenalty)) throw Error("Em empate no mata-mata, informe um vencedor nos pênaltis.");
-    result.homePenalty = Number(input.homePenalty);
-    result.awayPenalty = Number(input.awayPenalty);
+  if (match.knockout) {
+    if (![match.home, match.away].includes(input?.advancedTeam)) throw Error("Escolha qual turma avançou neste confronto.");
+    result.advancedTeam = input.advancedTeam;
+    const hasHomePenalty = input.homePenalty !== null && input.homePenalty !== undefined && input.homePenalty !== "";
+    const hasAwayPenalty = input.awayPenalty !== null && input.awayPenalty !== undefined && input.awayPenalty !== "";
+    if (hasHomePenalty !== hasAwayPenalty || (hasHomePenalty && (!nonNegativeInteger(input.homePenalty) || !nonNegativeInteger(input.awayPenalty)))) throw Error("Revise o placar dos pênaltis.");
+    if (hasHomePenalty) {
+      result.homePenalty = Number(input.homePenalty);
+      result.awayPenalty = Number(input.awayPenalty);
+    }
   }
   const scorers = Array.isArray(input?.scorers) ? input.scorers : [];
   if (scorers.length > 100) throw Error("Há pontuadores demais neste jogo.");

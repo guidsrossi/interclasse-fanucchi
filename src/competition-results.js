@@ -19,19 +19,14 @@ export function resultIsComplete(match, result) {
   const homeScore = score(result?.homeScore);
   const awayScore = score(result?.awayScore);
   if (!match?.home || !match?.away || homeScore === null || awayScore === null) return false;
-  if (!match.knockout || homeScore !== awayScore) return true;
-  const homePenalty = score(result?.homePenalty);
-  const awayPenalty = score(result?.awayPenalty);
-  return homePenalty !== null && awayPenalty !== null && homePenalty !== awayPenalty;
+  if (!match.knockout) return true;
+  return [match.home, match.away].includes(result?.advancedTeam);
 }
 
 export function winnerFor(match, result) {
   if (match?.home && !match?.away) return match.home;
   if (!resultIsComplete(match, result) || !match.knockout) return null;
-  const homeScore = score(result.homeScore);
-  const awayScore = score(result.awayScore);
-  if (homeScore !== awayScore) return homeScore > awayScore ? match.home : match.away;
-  return score(result.homePenalty) > score(result.awayPenalty) ? match.home : match.away;
+  return result.advancedTeam;
 }
 
 export function buildGroupStandings(bracket, payload = {}) {
@@ -137,7 +132,7 @@ export function rankingEntriesForCompetition(competition, bracket, payload = {})
     const tied = homeScore === awayScore;
     const homeWon = tied ? winnerFor(match, result) === match.home : homeScore > awayScore;
     const awayWon = tied ? winnerFor(match, result) === match.away : awayScore > homeScore;
-    const penaltyLabel = match.knockout && tied
+    const penaltyLabel = match.knockout && tied && score(result.homePenalty) !== null && score(result.awayPenalty) !== null
       ? ` (${score(result.homePenalty)} × ${score(result.awayPenalty)} nos pênaltis)`
       : "";
     const label = `${competition.title} · ${match.phase} · ${match.home} ${homeScore} × ${awayScore} ${match.away}${penaltyLabel}`;

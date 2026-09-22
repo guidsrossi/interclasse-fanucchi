@@ -42,9 +42,9 @@ test("propaga vencedores no mata-mata e calcula colocações", () => {
     { name: "Final", matches: [{ a: "Vencedor 1", b: "Vencedor 2" }] },
   ] };
   const progress = competitionProgress(knockout, { matches: {
-    "ko-0-0": { homeScore: 2, awayScore: 1, scorers: [{ className: "1º A", studentName: "Ana", points: 2 }] },
-    "ko-0-1": { homeScore: 0, awayScore: 0, homePenalty: 3, awayPenalty: 4 },
-    "ko-1-0": { homeScore: 1, awayScore: 3 },
+    "ko-0-0": { homeScore: 2, awayScore: 1, advancedTeam: "1º A", scorers: [{ className: "1º A", studentName: "Ana", points: 2 }] },
+    "ko-0-1": { homeScore: 0, awayScore: 0, advancedTeam: "1º D", homePenalty: 3, awayPenalty: 4 },
+    "ko-1-0": { homeScore: 1, awayScore: 3, advancedTeam: "1º D" },
   } });
   assert.equal(progress.placements.champion, "1º D");
   assert.equal(progress.placements.runnerUp, "1º A");
@@ -57,7 +57,7 @@ test("transforma jogos concluídos em lançamentos rastreáveis no ranking", () 
   const entries = rankingEntriesForCompetition(
     { id: "futsal", modalityId: "futsal", title: "Futsal misto" },
     bracket,
-    { matches: { "ko-0-0": { homeScore: 3, awayScore: 2 } } },
+    { matches: { "ko-0-0": { homeScore: 3, awayScore: 2, advancedTeam: "1º A" } } },
   );
   assert.deepEqual(entries.map(({ class_name, points, wins, losses }) => ({ class_name, points, wins, losses })), [
     { class_name: "1º A", points: 3, wins: 1, losses: 0 },

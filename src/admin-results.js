@@ -1,5 +1,6 @@
 import "./admin-results.css";
 import "./component-layout-fixes.css";
+import "./manual-advancement.css";
 import { modalities } from "./modalities.js";
 import { competitionProgress } from "./competition-results.js";
 
@@ -38,7 +39,7 @@ export function mountResultsAdmin(root, { esc }) {
     if (!match.home || !match.away) return `<article class="result-match is-locked"><header><span>${esc(match.phase)}</span><b>Aguardando definição</b></header><p>Este confronto será liberado após a conclusão da fase anterior.</p></article>`;
     const result = match.result || {};
     const complete = match.complete;
-    return `<form class="result-match ${complete ? "is-complete" : ""}" data-match-id="${match.id}"><header><span>${esc(match.phase)}</span><b>${complete ? "Resultado lançado" : "A lançar"}</b></header><div class="result-scoreboard"><label><strong>${esc(match.home)}</strong><input name="home_score" type="number" min="0" max="999" value="${result.homeScore ?? ""}" required></label><i>×</i><label><strong>${esc(match.away)}</strong><input name="away_score" type="number" min="0" max="999" value="${result.awayScore ?? ""}" required></label></div><div class="penalty-fields" ${match.knockout && result.homeScore === result.awayScore && result.homeScore !== undefined ? "" : "hidden"}><span>Desempate nos pênaltis</span><label>${esc(match.home)}<input name="home_penalty" type="number" min="0" max="999" value="${result.homePenalty ?? ""}"></label><label>${esc(match.away)}<input name="away_penalty" type="number" min="0" max="999" value="${result.awayPenalty ?? ""}"></label></div><div class="result-scorers"><div><strong>Quem marcou os pontos</strong><small>A soma individual deve fechar o placar de cada turma.</small></div><div class="result-scorer-list">${(result.scorers || []).map((scorer) => scorerRow(match, scorer)).join("")}</div><button type="button" class="add-scorer">+ Adicionar estudante</button></div><p class="admin-error" role="alert"></p><footer>${complete ? '<button type="button" class="clear-result danger-secondary">Limpar resultado</button>' : ""}<button type="submit" class="submit">Salvar resultado <span>↗</span></button></footer></form>`;
+    return `<form class="result-match ${complete ? "is-complete" : ""}" data-match-id="${match.id}"><header><span>${esc(match.phase)}</span><b>${complete ? "Resultado lançado" : "A lançar"}</b></header><div class="result-scoreboard"><label><strong>${esc(match.home)}</strong><input name="home_score" type="number" min="0" max="999" value="${result.homeScore ?? ""}" required></label><i>×</i><label><strong>${esc(match.away)}</strong><input name="away_score" type="number" min="0" max="999" value="${result.awayScore ?? ""}" required></label></div>${match.knockout ? `<label class="advanced-team">Turma que avançou<select name="advanced_team" required><option value="">Selecione manualmente</option>${[match.home, match.away].map((name) => option(esc(name), esc(name), result.advancedTeam === name)).join("")}</select><small>O sistema não escolhe o classificado automaticamente pelo placar.</small></label>` : ""}<div class="penalty-fields" ${match.knockout && result.homeScore === result.awayScore && result.homeScore !== undefined ? "" : "hidden"}><span>Pênaltis (opcional)</span><label>${esc(match.home)}<input name="home_penalty" type="number" min="0" max="999" value="${result.homePenalty ?? ""}"></label><label>${esc(match.away)}<input name="away_penalty" type="number" min="0" max="999" value="${result.awayPenalty ?? ""}"></label></div><div class="result-scorers"><div><strong>Quem marcou os pontos</strong><small>A soma individual deve fechar o placar de cada turma.</small></div><div class="result-scorer-list">${(result.scorers || []).map((scorer) => scorerRow(match, scorer)).join("")}</div><button type="button" class="add-scorer">+ Adicionar estudante</button></div><p class="admin-error" role="alert"></p><footer>${complete ? '<button type="button" class="clear-result danger-secondary">Limpar resultado</button>' : ""}<button type="submit" class="submit">Salvar resultado <span>↗</span></button></footer></form>`;
   }
 
   function render() {
@@ -91,7 +92,8 @@ export function mountResultsAdmin(root, { esc }) {
       result: {
         homeScore: Number(form.home_score.value), awayScore: Number(form.away_score.value),
         homePenalty: form.home_penalty.value === "" ? null : Number(form.home_penalty.value),
-        awayPenalty: form.away_penalty.value === "" ? null : Number(form.away_penalty.value), scorers,
+        awayPenalty: form.away_penalty.value === "" ? null : Number(form.away_penalty.value),
+        advancedTeam: form.advanced_team?.value || null, scorers,
       },
     };
     try {

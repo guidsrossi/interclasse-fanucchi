@@ -26,10 +26,17 @@ test("rejeita pontuação individual diferente do placar", () => {
   }, groupMatch, students), /Distribua os 2 pontos/);
 });
 
-test("exige desempate por pênaltis no mata-mata", () => {
+test("exige que o admin escolha manualmente quem avança no mata-mata", () => {
   assert.throws(() => normalizeMatchResult({
+    homeScore: 2,
+    awayScore: 0,
+    scorers: [{ className: "1º A", studentName: "Ana", points: 2 }],
+  }, { ...groupMatch, knockout: true }, students), /Escolha qual turma avançou/);
+  const result = normalizeMatchResult({
     homeScore: 0,
     awayScore: 0,
+    advancedTeam: "1º B",
     scorers: [],
-  }, { ...groupMatch, knockout: true }, students), /pênaltis/);
+  }, { ...groupMatch, knockout: true }, students);
+  assert.equal(result.advancedTeam, "1º B");
 });
