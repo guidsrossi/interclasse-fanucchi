@@ -1,6 +1,7 @@
 import "./admin-results.css";
 import "./component-layout-fixes.css";
 import "./manual-advancement.css";
+import "./bye-advancement.css";
 import { modalities } from "./modalities.js";
 import { competitionProgress } from "./competition-results.js";
 
@@ -36,6 +37,7 @@ export function mountResultsAdmin(root, { esc }) {
   }
 
   function matchMarkup(match) {
+    if (match.bye) return `<article class="result-match is-bye"><header><span>${esc(match.phase)}</span><b>Avanço direto do sorteio</b></header><p><strong>${esc(match.home)}</strong> avança somente para a próxima fase por não ter adversário neste confronto.</p></article>`;
     if (!match.home || !match.away) return `<article class="result-match is-locked"><header><span>${esc(match.phase)}</span><b>Aguardando definição</b></header><p>Este confronto será liberado após a conclusão da fase anterior.</p></article>`;
     const result = match.result || {};
     const complete = match.complete;

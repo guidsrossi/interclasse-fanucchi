@@ -24,7 +24,7 @@ export function resultIsComplete(match, result) {
 }
 
 export function winnerFor(match, result) {
-  if (match?.home && !match?.away) return match.home;
+  if (match?.bye && match.home && !match.away) return match.home;
   if (!resultIsComplete(match, result) || !match.knockout) return null;
   return result.advancedTeam;
 }
@@ -79,7 +79,8 @@ export function buildKnockoutMatches(bracket, payload = {}, standings = null) {
       const away = roundIndex === 0
         ? (bracket.format === "groups-knockout" ? (groupStageComplete ? seedTeam(source.b, standings) : null) : source.b)
         : previous[matchIndex * 2 + 1]?.winner || null;
-      const match = { id, phase: round.name, roundIndex, matchIndex, home, away, knockout: true, bye: Boolean(home && !away) };
+      const bye = roundIndex === 0 && Boolean(source.a && !source.b && home);
+      const match = { id, phase: round.name, roundIndex, matchIndex, home, away, knockout: true, bye };
       const result = matchResult(payload, id);
       return { ...match, result, complete: resultIsComplete(match, result), winner: winnerFor(match, result) };
     });

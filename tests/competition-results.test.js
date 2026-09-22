@@ -52,6 +52,21 @@ test("propaga vencedores no mata-mata e calcula colocações", () => {
   assert.equal(progress.scorers[0].goals, 2);
 });
 
+test("avanço direto não se propaga por adversários ainda indefinidos", () => {
+  const bracket = { format: "knockout", rounds: [
+    { name: "Oitavas de final", matches: [{ a: "3º E", b: null }, { a: "3º A", b: "3º B" }] },
+    { name: "Quartas de final", matches: [{ a: "Vencedor 1", b: "Vencedor 2" }] },
+    { name: "Semifinais", matches: [{ a: "Vencedor 1", b: "Vencedor 2" }] },
+  ] };
+  const matches = competitionProgress(bracket).knockoutMatches;
+  assert.equal(matches[0].bye, true);
+  assert.equal(matches[2].home, "3º E");
+  assert.equal(matches[2].away, null);
+  assert.equal(matches[2].bye, false);
+  assert.equal(matches[2].winner, null);
+  assert.equal(matches[3].home, null);
+});
+
 test("transforma jogos concluídos em lançamentos rastreáveis no ranking", () => {
   const bracket = { format: "knockout", rounds: [{ name: "Final", matches: [{ a: "1º A", b: "1º B" }] }] };
   const entries = rankingEntriesForCompetition(

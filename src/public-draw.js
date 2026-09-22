@@ -4,6 +4,7 @@ import "./public-draw.css";
 import "./public-results.css";
 import "./component-layout-fixes.css";
 import "./manual-advancement.css";
+import "./bye-advancement.css";
 import { assetUrl, recoverImage } from "./assets.js";
 import { competitionProgress } from "./competition-results.js";
 
@@ -21,6 +22,7 @@ function team(teamName) {
 }
 
 function playedMatch(match) {
+  if (match.bye) return `<article class="public-result-match is-bye"><header><span>${esc(match.phase)}</span><b>AVANÇO DIRETO</b></header><div><span>${team(match.home)}</span><strong>→</strong><span>${team("Próxima fase")}</span></div><p>Avanço definido pelo sorteio apenas para a próxima fase.</p></article>`;
   const result = match.result || {};
   const complete = match.complete;
   const scorers = (result.scorers || []).map((item) => `<span>${esc(item.studentName)} <b>${item.points || 1}</b></span>`).join("");
