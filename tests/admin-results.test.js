@@ -1,0 +1,35 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { normalizeMatchResult } from "../api/admin/results.js";
+
+const students = new Set(["1º A|ana", "1º B|bia"]);
+const groupMatch = { home: "1º A", away: "1º B", knockout: false };
+
+test("valida placar e distribuição dos pontos entre estudantes", () => {
+  const result = normalizeMatchResult({
+    homeScore: 2,
+    awayScore: 1,
+    scorers: [
+      { className: "1º A", studentName: "Ana", points: 2 },
+      { className: "1º B", studentName: "Bia", points: 1 },
+    ],
+  }, groupMatch, students);
+  assert.equal(result.homeScore, 2);
+  assert.equal(result.scorers[0].points, 2);
+});
+
+test("rejeita pontuação individual diferente do placar", () => {
+  assert.throws(() => normalizeMatchResult({
+    homeScore: 2,
+    awayScore: 0,
+    scorers: [{ className: "1º A", studentName: "Ana", points: 1 }],
+  }, groupMatch, students), /Distribua os 2 pontos/);
+});
+
+test("exige desempate por pênaltis no mata-mata", () => {
+  assert.throws(() => normalizeMatchResult({
+    homeScore: 0,
+    awayScore: 0,
+    scorers: [],
+  }, { ...groupMatch, knockout: true }, students), /pênaltis/);
+});

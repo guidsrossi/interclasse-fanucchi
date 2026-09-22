@@ -108,9 +108,9 @@ export function createGroupTournament(participants,random=Math.random){
    rounds:[
     {name:'Quartas de final',matches:[
      {a:'1º do Grupo A',b:'4º do Grupo B',bye:false},
-     {a:'2º do Grupo B',b:'3º do Grupo A',bye:false},
+     {a:'2º do Grupo A',b:'3º do Grupo B',bye:false},
      {a:'1º do Grupo B',b:'4º do Grupo A',bye:false},
-     {a:'2º do Grupo A',b:'3º do Grupo B',bye:false}
+     {a:'2º do Grupo B',b:'3º do Grupo A',bye:false}
     ]},
     {name:'Semifinais',matches:[
      {a:'Vencedor das quartas 1',b:'Vencedor das quartas 2',bye:false},

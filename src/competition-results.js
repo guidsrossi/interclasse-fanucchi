@@ -72,16 +72,17 @@ function seedTeam(label, standings) {
 export function buildKnockoutMatches(bracket, payload = {}, standings = null) {
   const knockout = bracket?.format === "groups-knockout" ? bracket.knockout : bracket;
   if (!knockout?.rounds?.length) return [];
+  const groupStageComplete = bracket?.format !== "groups-knockout" || standings?.complete;
   const all = [];
   let previous = [];
   knockout.rounds.forEach((round, roundIndex) => {
     const current = round.matches.map((source, matchIndex) => {
       const id = `ko-${roundIndex}-${matchIndex}`;
       const home = roundIndex === 0
-        ? (bracket.format === "groups-knockout" ? seedTeam(source.a, standings) : source.a)
+        ? (bracket.format === "groups-knockout" ? (groupStageComplete ? seedTeam(source.a, standings) : null) : source.a)
         : previous[matchIndex * 2]?.winner || null;
       const away = roundIndex === 0
-        ? (bracket.format === "groups-knockout" ? seedTeam(source.b, standings) : source.b)
+        ? (bracket.format === "groups-knockout" ? (groupStageComplete ? seedTeam(source.b, standings) : null) : source.b)
         : previous[matchIndex * 2 + 1]?.winner || null;
       const match = { id, phase: round.name, roundIndex, matchIndex, home, away, knockout: true, bye: Boolean(home && !away) };
       const result = matchResult(payload, id);
@@ -112,7 +113,7 @@ export function competitionProgress(bracket, payload = {}) {
     if (!item?.studentName || !item?.className) return all;
     const key = `${item.className}|${item.studentName}`;
     const row = all.get(key) || { className: item.className, studentName: item.studentName, goals: 0 };
-    row.goals += 1;
+    row.goals += Math.max(1, Number(item.points) || 1);
     all.set(key, row);
     return all;
   }, new Map());
@@ -123,4 +124,34 @@ export function competitionProgress(bracket, payload = {}) {
     placements: { champion, runnerUp, thirdPlaces },
     scorers: [...scorers.values()].sort((a, b) => b.goals - a.goals || a.studentName.localeCompare(b.studentName, "pt-BR")),
   };
+}
+
+export function rankingEntriesForCompetition(competition, bracket, payload = {}) {
+  const progress = competitionProgress(bracket, payload);
+  const matches = [...progress.groupMatches, ...progress.knockoutMatches]
+    .filter((match) => match.complete && match.home && match.away);
+  return matches.flatMap((match) => {
+    const result = match.result || matchResult(payload, match.id);
+    const homeScore = score(result.homeScore);
+    const awayScore = score(result.awayScore);
+    const tied = homeScore === awayScore;
+    const homeWon = tied ? winnerFor(match, result) === match.home : homeScore > awayScore;
+    const awayWon = tied ? winnerFor(match, result) === match.away : awayScore > homeScore;
+    const penaltyLabel = match.knockout && tied
+      ? ` (${score(result.homePenalty)} × ${score(result.awayPenalty)} nos pênaltis)`
+      : "";
+    const label = `${competition.title} · ${match.phase} · ${match.home} ${homeScore} × ${awayScore} ${match.away}${penaltyLabel}`;
+    const entry = (className, won) => ({
+      class_name: className,
+      modality_id: competition.modalityId,
+      entry_type: "resultado",
+      label,
+      points: tied && !match.knockout ? 1 : won ? 3 : 0,
+      wins: won ? 1 : 0,
+      draws: tied && !match.knockout ? 1 : 0,
+      losses: !won && (!tied || match.knockout) ? 1 : 0,
+      match_id: match.id,
+    });
+    return [entry(match.home, homeWon), entry(match.away, awayWon)];
+  });
 }

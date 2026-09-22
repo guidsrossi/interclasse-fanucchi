@@ -63,6 +63,12 @@ test('esportes coletivos são divididos em dois grupos e classificam quatro por 
  assert.deepEqual(tournament.revealOrder.map(item=>item.group),['A','B','A','B','A','B','A','B','A','B']);
  assert.equal(tournament.knockout.rounds[0].name,'Quartas de final');
  assert.deepEqual(tournament.knockout.rounds[0].matches[0],{a:'1º do Grupo A',b:'4º do Grupo B',bye:false});
+ assert.deepEqual(tournament.knockout.rounds[0].matches.map(({a,b})=>[a,b]),[
+  ['1º do Grupo A','4º do Grupo B'],
+  ['2º do Grupo A','3º do Grupo B'],
+  ['1º do Grupo B','4º do Grupo A'],
+  ['2º do Grupo B','3º do Grupo A']
+ ]);
 });
 
 test('somente a categoria Coletivos recebe fase de grupos',()=>{

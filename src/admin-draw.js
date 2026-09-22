@@ -6,6 +6,7 @@ import {
 import { logoForClass } from "./class-logos.js";
 import { assetUrl, recoverImage } from "./assets.js";
 import { mountRankingAdmin } from "./admin-ranking.js";
+import { mountResultsAdmin } from "./admin-results.js";
 
 const storageKey = "interclasse-tournament-draw-v3";
 const secureRandom = () => {
@@ -157,7 +158,7 @@ export function mountDrawAdmin(root, { rows, modalities, esc }) {
   const tabs = document.createElement("div");
   tabs.className = "admin-tabs";
   tabs.innerHTML =
-    '<button class="selected" data-admin-tab="registrations">Inscritos</button><button data-admin-tab="draw">Sorteio dos chaveamentos</button><button data-admin-tab="ranking">Ranking geral</button>';
+    '<button class="selected" data-admin-tab="registrations">Inscritos</button><button data-admin-tab="draw">Sorteio dos chaveamentos</button><button data-admin-tab="results">Resultados dos jogos</button><button data-admin-tab="ranking">Ranking geral</button>';
   const registrationsPanel = document.createElement("section");
   registrationsPanel.className = "admin-panel";
   registrationsPanel.dataset.adminPanel = "registrations";
@@ -169,11 +170,17 @@ export function mountDrawAdmin(root, { rows, modalities, esc }) {
   rankingPanel.className = "admin-panel";
   rankingPanel.dataset.adminPanel = "ranking";
   rankingPanel.hidden = true;
+  const resultsPanel = document.createElement("section");
+  resultsPanel.className = "admin-panel";
+  resultsPanel.dataset.adminPanel = "results";
+  resultsPanel.hidden = true;
   registrationsPanel.append(filters, results);
   title.after(tabs);
   tabs.after(registrationsPanel);
   registrationsPanel.after(drawPanel);
-  drawPanel.after(rankingPanel);
+  drawPanel.after(resultsPanel);
+  resultsPanel.after(rankingPanel);
+  mountResultsAdmin(resultsPanel, { esc });
   mountRankingAdmin(rankingPanel, { rows, esc });
 
   const competitions = buildCompetitions(modalities, rows);
@@ -416,6 +423,7 @@ export function mountDrawAdmin(root, { rows, modalities, esc }) {
           );
         registrationsPanel.hidden = selected !== "registrations";
         drawPanel.hidden = selected !== "draw";
+        resultsPanel.hidden = selected !== "results";
         rankingPanel.hidden = selected !== "ranking";
         if (selected === "draw") renderDrawPanel();
       }),

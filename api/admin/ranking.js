@@ -75,6 +75,12 @@ export default async function handler(req, res) {
   }
   const id = String(req.body?.id || "");
   if (["PATCH", "DELETE"].includes(req.method) && !uuid.test(id)) return res.status(400).json({ error: "Lançamento inválido." });
+  if (["PATCH", "DELETE"].includes(req.method)) {
+    const existingResponse = await fetch(`${url}/rest/v1/interclasse_score_entries?id=eq.${id}&select=source&limit=1`, { headers: headers(key) });
+    const existing = existingResponse.ok ? (await existingResponse.json())[0] : null;
+    if (!existing) return res.status(404).json({ error: "Lançamento não encontrado." });
+    if (existing.source === "competition") return res.status(409).json({ error: "Altere este lançamento pela aba Resultados dos jogos." });
+  }
   if (req.method === "DELETE") {
     const response = await fetch(`${url}/rest/v1/interclasse_score_entries?id=eq.${id}`, { method: "DELETE", headers: { ...headers(key), Prefer: "return=representation" } });
     const data = await response.json();
