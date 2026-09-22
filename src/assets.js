@@ -1,4 +1,4 @@
-const assetVersion = "20260920-4";
+const assetVersion = "20260922-1";
 
 export function assetUrl(path) {
   if (!path || !path.startsWith("/")) return path;
