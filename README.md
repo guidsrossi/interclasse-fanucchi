@@ -1,6 +1,6 @@
 # Interclasse
 
-Site de inscrições por modalidade e turma, em português, responsivo. Os limites finais informados são usados: coletivos 10; vôlei de mesa 6; atletismo no total 4; tênis de mesa 4; dominó, truco, xadrez e damas 4; Torre Jenga 2; passa ou repassa 4; FIFA 2.
+Site de inscrições por modalidade e turma, em português, responsivo. O atletismo aparece em opções separadas para masculino e feminino, com o mesmo sistema de sorteio para as duas categorias. Os limites finais informados são usados: coletivos 10; vôlei de mesa 6; atletismo 4 por prova e categoria; tênis de mesa 4; dominó, truco, xadrez e damas 4; Torre Jenga 2; passa ou repassa 4; FIFA 2.
 
 ## Desenvolvimento
 

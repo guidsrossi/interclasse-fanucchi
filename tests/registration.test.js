@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {modalities,normalizeClass,validateRegistration} from '../src/modalities.js';
+import {modalities,publicModalities,normalizeClass,validateRegistration} from '../src/modalities.js';
 test('limites finais prevalecem sobre a tabela inicial',()=>{assert.equal(modalities.length,16);assert.ok(modalities.filter(m=>m.category==='Coletivos').every(m=>m.limit===10));assert.equal(modalities.find(m=>m.id==='volei_mesa').limit,6);assert.equal(modalities.find(m=>m.id==='domino').limit,4);assert.equal(modalities.find(m=>m.id==='jenga').limit,2);assert.equal(modalities.find(m=>m.id==='repassa').limit,4);assert.equal(modalities.find(m=>m.id==='fifa').limit,2);});
 test('todas as modalidades possuem arte de mascote',()=>{assert.ok(modalities.every(m=>m.image?.startsWith('/mascote-')));});
+test('atletismo possui opcoes publicas separadas por categoria',()=>{const athletics=publicModalities.filter(m=>m.modalityId==='atletismo');assert.equal(publicModalities.length,17);assert.deepEqual(athletics.map(m=>m.division),['Masculino','Feminino']);assert.ok(athletics.every(m=>m.events.length===4));});
 test('turmas aceitam formatos usuais sem aceitar entradas inválidas ou o 2º E inexistente',()=>{for(const room of ['3b','3 B','3° b','3º B'])assert.equal(normalizeClass(room),'3º B');assert.equal(validateRegistration('Maria Silva','2c'),null);for(const room of ['2º E','4 A','3º AB','<script>',''])assert.ok(validateRegistration('Maria Silva',room));assert.ok(validateRegistration('  ','3a'));});

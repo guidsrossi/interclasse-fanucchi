@@ -35,6 +35,19 @@ test('separa o atletismo por prova e categoria',()=>{
  assert.deepEqual(athletics.find(item=>item.eventName==='100 m rasos'&&item.division==='Masculino').participants,[]);
 });
 
+test('usa o mesmo modelo de sorteio no atletismo masculino e feminino',()=>{
+ const competitions=buildCompetitions(modalities,[
+  {modality_id:'atletismo',class_name:'1º A',event_name:'100 m rasos',division:'Masculino'},
+  {modality_id:'atletismo',class_name:'1º B',event_name:'100 m rasos',division:'Masculino'},
+  {modality_id:'atletismo',class_name:'2º A',event_name:'100 m rasos',division:'Feminino'},
+  {modality_id:'atletismo',class_name:'2º B',event_name:'100 m rasos',division:'Feminino'}
+ ]);
+ const draw=createTournamentDraw(competitions,()=>0.5);
+ assert.equal(draw.brackets['atletismo:100 m rasos:Masculino'].format,'knockout');
+ assert.equal(draw.brackets['atletismo:100 m rasos:Feminino'].format,'knockout');
+ assert.equal(draw.brackets['atletismo:100 m rasos:Masculino'].rounds.length,draw.brackets['atletismo:100 m rasos:Feminino'].rounds.length);
+});
+
 test('chaveamento de três turmas cria um avanço direto sem confronto vazio',()=>{
  const bracket=createBracket(['1º A','1º B','1º C'],()=>0.25);
  assert.equal(bracket.participantCount,3);

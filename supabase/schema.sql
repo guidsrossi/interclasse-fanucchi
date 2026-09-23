@@ -20,10 +20,11 @@ create unique index if not exists interclasse_unique_student on public.interclas
 alter table public.interclasse_modalities enable row level security;
 alter table public.interclasse_registrations enable row level security;
 revoke all on public.interclasse_modalities,public.interclasse_registrations from anon,authenticated;
-create or replace function public.interclasse_counts()
-returns table(modality_id text,class_name text,total bigint)
+drop function if exists public.interclasse_counts();
+create function public.interclasse_counts()
+returns table(modality_id text,class_name text,division text,total bigint)
 language sql security definer set search_path = '' as $$
- select r.modality_id,r.class_name,count(*) from public.interclasse_registrations r group by r.modality_id,r.class_name;
+ select r.modality_id,r.class_name,r.division,count(*) from public.interclasse_registrations r group by r.modality_id,r.class_name,r.division;
 $$;
 create table if not exists public.interclasse_settings (
  id text primary key,

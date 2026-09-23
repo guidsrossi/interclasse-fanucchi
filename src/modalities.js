@@ -18,5 +18,17 @@ export const modalities = [
  {id:'jenga',image:'/mascote-jenga.jpeg',name:'Torre Jenga',category:'Conhecimentos e inclusão',leader:'Luana',class:'3º D',limit:2,icon:'▥',description:'Inclusão, concentração e trabalho em equipe.'},
  {id:'repassa',image:'/mascote-repassa.jpeg',name:'Passa ou repassa',category:'Conhecimentos e inclusão',leader:'Luana',class:'3º D',limit:4,icon:'💡',description:'Conhecimentos gerais para representar sua turma.'}
 ];
+
+// O atletismo continua usando o mesmo identificador no banco para preservar as
+// inscrições e os sorteios existentes. Na página pública, cada categoria ganha
+// uma opção própria e já leva a categoria correta para o cadastro.
+export const publicModalities = modalities.flatMap((modality) =>
+ modality.id === 'atletismo'
+  ? [
+     {...modality,id:'atletismo_masculino',modalityId:'atletismo',name:'Atletismo masculino',division:'Masculino',description:'100 m rasos, salto em distância, salto em altura e arremesso de peso. Categoria masculina.'},
+     {...modality,id:'atletismo_feminino',modalityId:'atletismo',name:'Atletismo feminino',division:'Feminino',description:'100 m rasos, salto em distância, salto em altura e arremesso de peso. Categoria feminina.'}
+    ]
+  : [modality]
+);
 export function normalizeClass(value){ return value.trim().toUpperCase().replace(/^([123])\s*[°ºo]?\s*([A-Z])$/i,'$1º $2'); }
 export function validateRegistration(name,room){if(name.trim().length<3||name.trim().length>100)return 'Digite um nome entre 3 e 100 caracteres.';if(!isSchoolClass(normalizeClass(room)))return 'Selecione uma turma existente.';return null;}
