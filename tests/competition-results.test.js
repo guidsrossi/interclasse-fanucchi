@@ -75,8 +75,20 @@ test("transforma jogos concluídos em lançamentos rastreáveis no ranking", () 
     { matches: { "ko-0-0": { homeScore: 3, awayScore: 2, advancedTeam: "1º A" } } },
   );
   assert.deepEqual(entries.map(({ class_name, points, wins, losses }) => ({ class_name, points, wins, losses })), [
-    { class_name: "1º A", points: 3, wins: 1, losses: 0 },
+    { class_name: "1º A", points: 300, wins: 1, losses: 0 },
     { class_name: "1º B", points: 0, wins: 0, losses: 1 },
   ]);
   assert.match(entries[0].label, /Futsal misto · Final · 1º A 3 × 2 1º B/);
+});
+
+test("atribui 100 pontos para cada turma em empate de grupo", () => {
+  const entries = rankingEntriesForCompetition(
+    { id: "futsal", modalityId: "futsal", title: "Futsal misto" },
+    groupBracket,
+    { matches: { "group-A-0-1": { homeScore: 1, awayScore: 1 } } },
+  );
+  assert.deepEqual(entries.map(({ points, draws }) => ({ points, draws })), [
+    { points: 100, draws: 1 },
+    { points: 100, draws: 1 },
+  ]);
 });

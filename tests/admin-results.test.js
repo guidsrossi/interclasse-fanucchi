@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeMatchResult } from "../api/admin/results.js";
+import { normalizeMatchResult, normalizeScheduledAt } from "../api/admin/results.js";
 
 const students = new Set(["1º A|ana", "1º B|bia"]);
 const groupMatch = { home: "1º A", away: "1º B", knockout: false };
@@ -39,4 +39,10 @@ test("exige que o admin escolha manualmente quem avança no mata-mata", () => {
     scorers: [],
   }, { ...groupMatch, knockout: true }, students);
   assert.equal(result.advancedTeam, "1º B");
+});
+
+test("normaliza data e horário do confronto", () => {
+  assert.equal(normalizeScheduledAt("2026-10-05T14:30:00-03:00"), "2026-10-05T17:30:00.000Z");
+  assert.equal(normalizeScheduledAt(""), null);
+  assert.throws(() => normalizeScheduledAt("data inválida"), /data e horário válidos/);
 });

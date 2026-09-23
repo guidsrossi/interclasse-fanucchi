@@ -7,6 +7,14 @@ const competitionIdPattern = /^[\p{L}\p{N}: _—-]{1,180}$/u;
 const matchIdPattern = /^(group-[AB]-\d+-\d+|ko-\d+-\d+)$/;
 const nonNegativeInteger = (value) => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 999;
 
+export function normalizeScheduledAt(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) throw Error("Informe uma data e horário válidos.");
+  if (date.getUTCFullYear() < 2020 || date.getUTCFullYear() > 2100) throw Error("Informe uma data entre 2020 e 2100.");
+  return date.toISOString();
+}
+
 function competitionMeta(competitionId) {
   const [modalityId, eventName, division] = competitionId.split(":");
   const modality = modalities.find((item) => item.id === modalityId);
@@ -78,19 +86,45 @@ export default async function handler(req, res) {
   payload.matches = { ...(payload.matches || {}) };
   const progress = competitionProgress(bracket, payload);
   const match = [...progress.groupMatches, ...progress.knockoutMatches].find((item) => item.id === matchId);
-  if (!match?.home || !match?.away) return res.status(409).json({ error: "Este confronto ainda depende dos resultados anteriores." });
+  if (!match) return res.status(404).json({ error: "Jogo não encontrado no chaveamento." });
+  if (req.body?.schedule === true) {
+    try {
+      const scheduledAt = normalizeScheduledAt(req.body?.scheduledAt);
+      const current = payload.matches[matchId] || {};
+      if (scheduledAt) payload.matches[matchId] = { ...current, scheduledAt };
+      else if (Object.keys(current).some((key) => key !== "scheduledAt")) {
+        const { scheduledAt: _removed, ...remaining } = current;
+        payload.matches[matchId] = remaining;
+      } else delete payload.matches[matchId];
+    } catch (error) { return res.status(400).json({ error: error.message }); }
+  } else {
+    if (!match?.home || !match?.away) return res.status(409).json({ error: "Este confronto ainda depende dos resultados anteriores." });
 
-  if (req.body?.clear === true) delete payload.matches[matchId];
-  else {
-    const students = new Set((await studentsResponse.json()).map((item) => `${item.class_name}|${item.student_name.toLocaleLowerCase("pt-BR")}`));
-    try { payload.matches[matchId] = normalizeMatchResult(req.body?.result, match, students); }
-    catch (error) { return res.status(400).json({ error: error.message }); }
+    if (req.body?.clear === true) {
+      const scheduledAt = payload.matches[matchId]?.scheduledAt;
+      if (scheduledAt) payload.matches[matchId] = { scheduledAt };
+      else delete payload.matches[matchId];
+    } else {
+      const students = new Set((await studentsResponse.json()).map((item) => `${item.class_name}|${item.student_name.toLocaleLowerCase("pt-BR")}`));
+      try {
+        const scheduledAt = payload.matches[matchId]?.scheduledAt;
+        payload.matches[matchId] = { ...normalizeMatchResult(req.body?.result, match, students), ...(scheduledAt ? { scheduledAt } : {}) };
+      } catch (error) { return res.status(400).json({ error: error.message }); }
+    }
+    if (match.group) Object.keys(payload.matches).filter((id) => id.startsWith("ko-")).forEach((id) => {
+      const scheduledAt = payload.matches[id]?.scheduledAt;
+      if (scheduledAt) payload.matches[id] = { scheduledAt };
+      else delete payload.matches[id];
+    });
+    else Object.keys(payload.matches).filter((id) => {
+      const round = Number(id.match(/^ko-(\d+)-/)?.[1]);
+      return Number.isInteger(round) && round > match.roundIndex;
+    }).forEach((id) => {
+      const scheduledAt = payload.matches[id]?.scheduledAt;
+      if (scheduledAt) payload.matches[id] = { scheduledAt };
+      else delete payload.matches[id];
+    });
   }
-  if (match.group) Object.keys(payload.matches).filter((id) => id.startsWith("ko-")).forEach((id) => delete payload.matches[id]);
-  else Object.keys(payload.matches).filter((id) => {
-    const round = Number(id.match(/^ko-(\d+)-/)?.[1]);
-    return Number.isInteger(round) && round > match.roundIndex;
-  }).forEach((id) => delete payload.matches[id]);
 
   const entries = rankingEntriesForCompetition(competitionMeta(competitionId), bracket, payload).map((item) => ({ ...item, label: item.label.slice(0, 120) }));
   const response = await fetch(`${url}/rest/v1/rpc/interclasse_save_competition_result`, {

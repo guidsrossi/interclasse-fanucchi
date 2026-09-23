@@ -2,10 +2,20 @@ import "./admin-results.css";
 import "./component-layout-fixes.css";
 import "./manual-advancement.css";
 import "./bye-advancement.css";
+import "./match-schedule.css";
 import { modalities } from "./modalities.js";
 import { competitionProgress } from "./competition-results.js";
 
 const option = (value, label, selected = false) => `<option value="${value}" ${selected ? "selected" : ""}>${label}</option>`;
+
+function dateTimeValue(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+const scheduleMarkup = (match) => `<div class="match-schedule"><label>Data e horário<input name="scheduled_at" type="datetime-local" value="${dateTimeValue(match.result?.scheduledAt)}"></label><button type="button" class="save-schedule admin-secondary">Salvar data</button></div>`;
 
 function metaFor(id) {
   const [modalityId, eventName, division] = id.split(":");
@@ -38,10 +48,10 @@ export function mountResultsAdmin(root, { esc }) {
 
   function matchMarkup(match) {
     if (match.bye) return `<article class="result-match is-bye"><header><span>${esc(match.phase)}</span><b>Avanço direto do sorteio</b></header><p><strong>${esc(match.home)}</strong> avança somente para a próxima fase por não ter adversário neste confronto.</p></article>`;
-    if (!match.home || !match.away) return `<article class="result-match is-locked"><header><span>${esc(match.phase)}</span><b>Aguardando definição</b></header><p>Este confronto será liberado após a conclusão da fase anterior.</p></article>`;
+    if (!match.home || !match.away) return `<form class="result-match is-locked" data-match-id="${esc(match.id)}"><header><span>${esc(match.phase)}</span><b>Aguardando definição</b></header><p>Os adversários serão preenchidos após a conclusão da fase anterior. A data já pode ser agendada.</p>${scheduleMarkup(match)}<p class="admin-error" role="alert"></p></form>`;
     const result = match.result || {};
     const complete = match.complete;
-    return `<form class="result-match ${complete ? "is-complete" : ""}" data-match-id="${match.id}"><header><span>${esc(match.phase)}</span><b>${complete ? "Resultado lançado" : "A lançar"}</b></header><div class="result-scoreboard"><label><strong>${esc(match.home)}</strong><input name="home_score" type="number" min="0" max="999" value="${result.homeScore ?? ""}" required></label><i>×</i><label><strong>${esc(match.away)}</strong><input name="away_score" type="number" min="0" max="999" value="${result.awayScore ?? ""}" required></label></div>${match.knockout ? `<label class="advanced-team">Turma que avançou<select name="advanced_team" required><option value="">Selecione manualmente</option>${[match.home, match.away].map((name) => option(esc(name), esc(name), result.advancedTeam === name)).join("")}</select><small>O sistema não escolhe o classificado automaticamente pelo placar.</small></label>` : ""}<div class="penalty-fields" ${match.knockout && result.homeScore === result.awayScore && result.homeScore !== undefined ? "" : "hidden"}><span>Pênaltis (opcional)</span><label>${esc(match.home)}<input name="home_penalty" type="number" min="0" max="999" value="${result.homePenalty ?? ""}"></label><label>${esc(match.away)}<input name="away_penalty" type="number" min="0" max="999" value="${result.awayPenalty ?? ""}"></label></div><div class="result-scorers"><div><strong>Quem marcou os pontos</strong><small>A soma individual deve fechar o placar de cada turma.</small></div><div class="result-scorer-list">${(result.scorers || []).map((scorer) => scorerRow(match, scorer)).join("")}</div><button type="button" class="add-scorer">+ Adicionar estudante</button></div><p class="admin-error" role="alert"></p><footer>${complete ? '<button type="button" class="clear-result danger-secondary">Limpar resultado</button>' : ""}<button type="submit" class="submit">Salvar resultado <span>↗</span></button></footer></form>`;
+    return `<form class="result-match ${complete ? "is-complete" : ""}" data-match-id="${match.id}"><header><span>${esc(match.phase)}</span><b>${complete ? "Resultado lançado" : "A lançar"}</b></header>${scheduleMarkup(match)}<div class="result-scoreboard"><label><strong>${esc(match.home)}</strong><input name="home_score" type="number" min="0" max="999" value="${result.homeScore ?? ""}" required></label><i>×</i><label><strong>${esc(match.away)}</strong><input name="away_score" type="number" min="0" max="999" value="${result.awayScore ?? ""}" required></label></div>${match.knockout ? `<label class="advanced-team">Turma que avançou<select name="advanced_team" required><option value="">Selecione manualmente</option>${[match.home, match.away].map((name) => option(esc(name), esc(name), result.advancedTeam === name)).join("")}</select><small>O sistema não escolhe o classificado automaticamente pelo placar.</small></label>` : ""}<div class="penalty-fields" ${match.knockout && result.homeScore === result.awayScore && result.homeScore !== undefined ? "" : "hidden"}><span>Pênaltis (opcional)</span><label>${esc(match.home)}<input name="home_penalty" type="number" min="0" max="999" value="${result.homePenalty ?? ""}"></label><label>${esc(match.away)}<input name="away_penalty" type="number" min="0" max="999" value="${result.awayPenalty ?? ""}"></label></div><div class="result-scorers"><div><strong>Quem marcou os pontos</strong><small>A soma individual deve fechar o placar de cada turma.</small></div><div class="result-scorer-list">${(result.scorers || []).map((scorer) => scorerRow(match, scorer)).join("")}</div><button type="button" class="add-scorer">+ Adicionar estudante</button></div><p class="admin-error" role="alert"></p><footer>${complete ? '<button type="button" class="clear-result danger-secondary">Limpar resultado</button>' : ""}<button type="submit" class="submit">Salvar resultado <span>↗</span></button></footer></form>`;
   }
 
   function render() {
@@ -57,15 +67,19 @@ export function mountResultsAdmin(root, { esc }) {
     const matches = progress ? [...progress.groupMatches, ...progress.knockoutMatches] : [];
     root.innerHTML = `<div class="results-admin-heading"><div><span class="eyebrow dark">PLACARES E PONTUADORES</span><h2>Lançamento de resultados</h2><p>Cada turma enfrenta uma vez as demais do grupo. Os resultados atualizam a página inicial e o ranking geral automaticamente.</p></div><label>Competição<select id="result-competition">${competitions.map(([id]) => option(esc(id), `${esc(metaFor(id).category)} · ${esc(metaFor(id).title)}`, id === selectedCompetition)).join("")}</select></label></div>${error ? `<p class="results-admin-error">${esc(error)}</p>` : ""}${matches.length ? `<div class="result-match-list">${matches.map(matchMarkup).join("")}</div>` : '<div class="empty">Nenhum jogo disponível.</div>'}`;
     root.querySelector("#result-competition")?.addEventListener("change", (event) => { selectedCompetition = event.target.value; error = ""; render(); });
-    root.querySelectorAll(".result-match:not(.is-locked)").forEach((form) => {
+    root.querySelectorAll("form.result-match[data-match-id]").forEach((form) => {
       const match = matches.find((item) => item.id === form.dataset.matchId);
+      form.querySelector(".save-schedule").onclick = () => saveSchedule(form, match);
+      if (form.classList.contains("is-locked")) return;
       form.querySelectorAll(".result-scorer").forEach((row) => bindScorerRow(row, match));
+      const homeScoreInput = form.querySelector('[name="home_score"]');
+      const awayScoreInput = form.querySelector('[name="away_score"]');
       const togglePenalties = () => {
-        const tied = form.home_score.value !== "" && form.away_score.value !== "" && Number(form.home_score.value) === Number(form.away_score.value);
+        const tied = homeScoreInput.value !== "" && awayScoreInput.value !== "" && Number(homeScoreInput.value) === Number(awayScoreInput.value);
         form.querySelector(".penalty-fields").hidden = !(match.knockout && tied);
       };
-      form.home_score.oninput = togglePenalties;
-      form.away_score.oninput = togglePenalties;
+      homeScoreInput.oninput = togglePenalties;
+      awayScoreInput.oninput = togglePenalties;
       form.querySelector(".add-scorer").onclick = () => {
         const holder = form.querySelector(".result-scorer-list");
         holder.insertAdjacentHTML("beforeend", scorerRow(match));
@@ -77,6 +91,30 @@ export function mountResultsAdmin(root, { esc }) {
       });
       form.onsubmit = (event) => { event.preventDefault(); save(form, match, false); };
     });
+  }
+
+  async function saveSchedule(form, match) {
+    const button = form.querySelector(".save-schedule");
+    const message = form.querySelector(".admin-error");
+    button.disabled = true;
+    button.textContent = "Salvando…";
+    message.textContent = "";
+    try {
+      const input = form.querySelector('[name="scheduled_at"]');
+      const response = await fetch("/api/admin/results", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitionId: selectedCompetition, matchId: match.id, schedule: true, scheduledAt: input.value ? new Date(input.value).toISOString() : null }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw Error(data.error || "Não foi possível salvar a data.");
+      results[selectedCompetition] = data.payload;
+      render();
+    } catch (scheduleError) {
+      message.textContent = scheduleError.message;
+      button.disabled = false;
+      button.textContent = "Salvar data";
+    }
   }
 
   async function save(form, match, clear) {
@@ -92,10 +130,10 @@ export function mountResultsAdmin(root, { esc }) {
       competitionId: selectedCompetition,
       matchId: match.id,
       result: {
-        homeScore: Number(form.home_score.value), awayScore: Number(form.away_score.value),
-        homePenalty: form.home_penalty.value === "" ? null : Number(form.home_penalty.value),
-        awayPenalty: form.away_penalty.value === "" ? null : Number(form.away_penalty.value),
-        advancedTeam: form.advanced_team?.value || null, scorers,
+        homeScore: Number(form.querySelector('[name="home_score"]').value), awayScore: Number(form.querySelector('[name="away_score"]').value),
+        homePenalty: form.querySelector('[name="home_penalty"]').value === "" ? null : Number(form.querySelector('[name="home_penalty"]').value),
+        awayPenalty: form.querySelector('[name="away_penalty"]').value === "" ? null : Number(form.querySelector('[name="away_penalty"]').value),
+        advancedTeam: form.querySelector('[name="advanced_team"]')?.value || null, scorers,
       },
     };
     try {

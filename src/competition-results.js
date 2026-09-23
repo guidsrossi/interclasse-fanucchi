@@ -142,7 +142,7 @@ export function rankingEntriesForCompetition(competition, bracket, payload = {})
       modality_id: competition.modalityId,
       entry_type: "resultado",
       label,
-      points: tied && !match.knockout ? 1 : won ? 3 : 0,
+      points: tied && !match.knockout ? 100 : won ? 300 : 0,
       wins: won ? 1 : 0,
       draws: tied && !match.knockout ? 1 : 0,
       losses: !won && (!tied || match.knockout) ? 1 : 0,

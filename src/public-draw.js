@@ -5,10 +5,18 @@ import "./public-results.css";
 import "./component-layout-fixes.css";
 import "./manual-advancement.css";
 import "./bye-advancement.css";
+import "./match-schedule.css";
 import { assetUrl, recoverImage } from "./assets.js";
 import { competitionProgress } from "./competition-results.js";
 
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+
+function matchSchedule(result) {
+  if (!result?.scheduledAt) return "";
+  const date = new Date(result.scheduledAt);
+  if (Number.isNaN(date.getTime())) return "";
+  return `<time datetime="${esc(result.scheduledAt)}">${date.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</time>`;
+}
 
 function competitionMeta(id) {
   const [modalityId, eventName, division] = id.split(":");
@@ -26,7 +34,7 @@ function playedMatch(match) {
   const result = match.result || {};
   const complete = match.complete;
   const scorers = (result.scorers || []).map((item) => `<span>${esc(item.studentName)} <b>${item.points || 1}</b></span>`).join("");
-  return `<article class="public-result-match ${complete ? "is-complete" : ""}"><header><span>${esc(match.phase)}</span><b>${complete ? "ENCERRADO" : "A JOGAR"}</b></header><div><span>${team(match.home)}</span><strong>${complete ? result.homeScore : "–"}<i>×</i>${complete ? result.awayScore : "–"}</strong><span>${team(match.away)}</span></div>${complete && match.knockout && result.homePenalty !== undefined ? `<p>Pênaltis: ${result.homePenalty} × ${result.awayPenalty}</p>` : ""}${complete && match.knockout ? `<p class="public-advanced">Classificado: <strong>${esc(result.advancedTeam)}</strong></p>` : ""}${scorers ? `<footer>${scorers}</footer>` : ""}</article>`;
+  return `<article class="public-result-match ${complete ? "is-complete" : ""}"><header><span>${esc(match.phase)}</span><b>${complete ? "ENCERRADO" : "A JOGAR"}</b></header>${matchSchedule(result)}<div><span>${team(match.home)}</span><strong>${complete ? result.homeScore : "–"}<i>×</i>${complete ? result.awayScore : "–"}</strong><span>${team(match.away)}</span></div>${complete && match.knockout && result.homePenalty !== undefined ? `<p>Pênaltis: ${result.homePenalty} × ${result.awayPenalty}</p>` : ""}${complete && match.knockout ? `<p class="public-advanced">Classificado: <strong>${esc(result.advancedTeam)}</strong></p>` : ""}${scorers ? `<footer>${scorers}</footer>` : ""}</article>`;
 }
 
 function standingsMarkup(progress) {
