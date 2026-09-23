@@ -1,10 +1,16 @@
 import "./style.css";
 import "./school.css";
 import "./teacher.css";
+import "./teacher-form-extras.css";
 
 const app = document.querySelector("#app");
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 let students = [];
+
+function currentLocalDateTime() {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
 
 function shell(content) {
   app.innerHTML = `<header class="teacher-header"><a class="brand" href="/"><span class="brand-symbol">i<span>✦</span></span>interclasse<span class="brand-year">PROFESSOR</span></a><a href="/" class="teacher-back">← Voltar ao site</a></header><main class="teacher-main">${content}</main>`;
@@ -27,7 +33,7 @@ function login(message = "") {
 function dashboard(data) {
   students = data.students || [];
   const classes = [...new Set(students.map((student) => student.class_name))];
-  shell(`<section class="teacher-dashboard"><div class="teacher-title"><div><span class="teacher-kicker">PENALIDADE DE SALA</span><h1>Quem está cabulando?</h1><p>Selecione a turma e o estudante. O lançamento ficará público no ranking geral.</p></div><button id="teacher-logout" class="teacher-logout">Sair</button></div><form id="absence-form" class="absence-form"><label>1. Selecione a turma<select name="class_name" required><option value="">Escolha a turma</option>${classes.map((className) => `<option>${esc(className)}</option>`).join("")}</select></label><label>2. Selecione o estudante<select name="student_name" required disabled><option value="">Escolha primeiro a turma</option></select></label><div class="absence-warning"><span>−10</span><div><strong>pontos no ranking geral</strong><p>O nome do estudante será exibido publicamente como responsável pela perda.</p></div></div><p class="teacher-error" role="alert"></p><button class="absence-submit" type="submit" disabled>Registrar perda de 10 pontos</button></form><section class="teacher-recent"><div><span>ÚLTIMOS REGISTROS</span><strong>Ocorrências recentes</strong></div>${data.recent?.length ? data.recent.map((item) => `<article><div><strong>${esc(item.responsible_student)}</strong><span>${esc(item.class_name)}</span></div><b>−10 pts</b><small>${new Date(item.created_at).toLocaleString("pt-BR")}</small></article>`).join("") : "<p>Nenhuma ocorrência registrada por professores.</p>"}</section></section>`);
+  shell(`<section class="teacher-dashboard"><div class="teacher-title"><div><span class="teacher-kicker">PENALIDADE DE SALA</span><h1>Quem está cabulando?</h1><p>Selecione a turma e o estudante. O lançamento ficará público no ranking geral.</p></div><button id="teacher-logout" class="teacher-logout">Sair</button></div><form id="absence-form" class="absence-form"><label>1. Selecione a turma<select name="class_name" required><option value="">Escolha a turma</option>${classes.map((className) => `<option>${esc(className)}</option>`).join("")}</select></label><label>2. Selecione o estudante<select name="student_name" required disabled><option value="">Escolha primeiro a turma</option></select></label><label>3. Data e horário<input name="occurred_at" type="datetime-local" value="${currentLocalDateTime()}" required></label><label>4. Descrição <span class="optional-field">opcional</span><textarea name="description" maxlength="120" rows="3" placeholder="Ex.: encontrado no corredor após o intervalo"></textarea></label><div class="absence-warning"><span>−10</span><div><strong>pontos no ranking geral</strong><p>O nome do estudante será exibido publicamente como responsável pela perda.</p></div></div><p class="teacher-lock-notice">Depois de registrado, o lançamento não poderá ser editado ou excluído pelo professor. Correções devem ser solicitadas ao administrador.</p><p class="teacher-error" role="alert"></p><button class="absence-submit" type="submit" disabled>Registrar perda de 10 pontos</button></form><section class="teacher-recent"><div><span>ÚLTIMOS REGISTROS</span><strong>Ocorrências recentes</strong></div>${data.recent?.length ? data.recent.map((item) => `<article><div><strong>${esc(item.responsible_student)}</strong><span>${esc(item.class_name)}</span></div><b>−10 pts</b><small>${new Date(item.created_at).toLocaleString("pt-BR")}</small>${item.label && !item.label.startsWith("Aluno cabulando:") ? `<p>${esc(item.label)}</p>` : ""}</article>`).join("") : "<p>Nenhuma ocorrência registrada por professores.</p>"}</section></section>`);
   const form = document.querySelector("#absence-form");
   const classSelect = form.class_name;
   const studentSelect = form.student_name;
@@ -43,14 +49,17 @@ function dashboard(data) {
     event.preventDefault();
     const className = classSelect.value;
     const studentName = studentSelect.value;
-    if (!confirm(`Confirmar que ${studentName}, da turma ${className}, estava cabulando?\n\nA turma perderá 10 pontos e o nome será exibido no ranking.`)) return;
+    const occurredAt = form.querySelector('[name="occurred_at"]').value;
+    const description = form.querySelector('[name="description"]').value.trim();
+    const formattedTime = new Date(occurredAt).toLocaleString("pt-BR");
+    if (!confirm(`Confirmar que ${studentName}, da turma ${className}, estava cabulando em ${formattedTime}?\n\nA turma perderá 10 pontos. Depois de registrar, somente o administrador poderá corrigir ou excluir.`)) return;
     submit.disabled = true;
     submit.textContent = "Registrando…";
     try {
-      const response = await fetch("/api/teacher", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "absence", class_name: className, student_name: studentName }) });
+      const response = await fetch("/api/teacher", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "absence", class_name: className, student_name: studentName, occurred_at: new Date(occurredAt).toISOString(), description }) });
       if (!response.ok) throw Error((await response.json()).error || "Não foi possível registrar.");
       const result = await response.json();
-      shell(`<section class="teacher-success"><span>✓</span><h1>Penalidade registrada</h1><p><strong>${esc(result.responsible_student)}</strong> foi identificado como responsável. A turma <strong>${esc(result.class_name)}</strong> perdeu 10 pontos.</p><button id="another-entry">Registrar outra ocorrência</button><a href="/">Ver ranking público →</a></section>`);
+      shell(`<section class="teacher-success"><span>✓</span><h1>Penalidade registrada</h1><p><strong>${esc(result.responsible_student)}</strong> foi identificado como responsável. A turma <strong>${esc(result.class_name)}</strong> perdeu 10 pontos em ${new Date(result.created_at).toLocaleString("pt-BR")}.</p><p>Este lançamento agora só pode ser alterado ou excluído pelo administrador.</p><button id="another-entry">Registrar outra ocorrência</button><a href="/">Ver ranking público →</a></section>`);
       document.querySelector("#another-entry").onclick = load;
     } catch (error) {
       form.querySelector(".teacher-error").textContent = error.message;

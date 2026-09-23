@@ -1,0 +1,49 @@
+.absence-form input,
+.absence-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #cdd9e7;
+  border-radius: 9px;
+  background: #fbfcfe;
+  color: #153a68;
+  font: 600 15px 'Inter', sans-serif;
+}
+
+.absence-form textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.optional-field {
+  font-size: 8px;
+  font-weight: 600;
+  color: #8292a8;
+  text-transform: uppercase;
+}
+
+.teacher-lock-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f4f7fb;
+  color: #60758f;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.teacher-recent article > p {
+  grid-column: 1 / -1;
+  margin: 5px 0 0;
+  color: #526b89;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .absence-form input,
+  .absence-form textarea {
+    min-height: 52px;
+    font-size: 16px;
+  }
+}
