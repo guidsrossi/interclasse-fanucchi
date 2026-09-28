@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildCompetitions,competitionSignature,createBracket,createGroupTournament,createTournamentDraw} from '../src/draw.js';
+import {buildCompetitions,competitionSignature,createBracket,createGroupTournament,createLeagueTournament,createTournamentDraw} from '../src/draw.js';
 
 const modalities=[
  {id:'futsal',name:'Futsal',category:'Coletivos'},
  {id:'atletismo',name:'Atletismo',category:'Atletismo',events:['100 m rasos','Salto em altura']},
- {id:'xadrez',name:'Xadrez',category:'Jogos de mesa'}
+ {id:'xadrez',name:'Xadrez',category:'Jogos de mesa'},
+ {id:'fifa',name:'Futebol FIFA',category:'E-sports'}
 ];
 
 test('inclui apenas turmas que possuem estudantes inscritos',()=>{
@@ -93,6 +94,31 @@ test('somente a categoria Coletivos recebe fase de grupos',()=>{
  ]);
  const draw=createTournamentDraw(competitions,()=>0.5);
  assert.equal(draw.brackets.futsal.format,'groups-knockout');
+ assert.equal(draw.brackets.xadrez.format,'knockout');
+});
+
+test('FIFA usa tabela única e classifica os oito primeiros para o mata-mata',()=>{
+ const teams=Array.from({length:10},(_,index)=>({className:`Turma ${index+1}`,studentCount:2}));
+ const tournament=createLeagueTournament(teams,()=>0.4);
+ assert.equal(tournament.format,'league-knockout');
+ assert.equal(tournament.qualifiers,8);
+ assert.equal(tournament.teams.length,10);
+ assert.deepEqual(tournament.knockout.rounds[0].matches.map(({a,b})=>[a,b]),[
+  ['1º da Classificação','8º da Classificação'],
+  ['2º da Classificação','7º da Classificação'],
+  ['3º da Classificação','6º da Classificação'],
+  ['4º da Classificação','5º da Classificação']
+ ]);
+});
+
+test('somente o FIFA recebe o formato de tabela única',()=>{
+ const rows=['1º A','1º B'].flatMap(class_name=>[
+  {modality_id:'fifa',class_name},
+  {modality_id:'xadrez',class_name}
+ ]);
+ const draw=createTournamentDraw(buildCompetitions(modalities,rows),()=>0.5);
+ assert.equal(draw.version,3);
+ assert.equal(draw.brackets.fifa.format,'league-knockout');
  assert.equal(draw.brackets.xadrez.format,'knockout');
 });
 

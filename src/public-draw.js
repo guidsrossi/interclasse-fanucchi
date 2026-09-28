@@ -2,6 +2,7 @@ import { modalities } from "./modalities.js";
 import { logoForClass } from "./class-logos.js";
 import "./public-draw.css";
 import "./public-results.css";
+import "./league-results.css";
 import "./component-layout-fixes.css";
 import "./manual-advancement.css";
 import "./bye-advancement.css";
@@ -41,6 +42,10 @@ function standingsMarkup(progress) {
   return `<div class="public-standings">${["A", "B"].map((group) => `<section><header><strong>Classificação · Grupo ${group}</strong><span>J V E D SG PTS</span></header>${progress.standings.tables[group].map((row) => `<div class="${row.qualified ? "is-qualified" : ""}"><b>${row.position}</b>${team(row.className)}<span>${row.played} ${row.wins} ${row.draws} ${row.losses} ${row.goalDifference} <strong>${row.points}</strong></span></div>`).join("")}</section>`).join("")}</div>`;
 }
 
+function leagueStandingsMarkup(progress) {
+  return `<div class="public-standings league-standings"><section><header><strong>Classificação geral</strong><span>J V E D SG PTS</span></header>${progress.standings.tables.league.map((row) => `<div class="${row.qualified ? "is-qualified" : ""}"><b>${row.position}</b>${team(row.className)}<span>${row.played} ${row.wins} ${row.draws} ${row.losses} ${row.goalDifference} <strong>${row.points}</strong></span></div>`).join("")}</section></div>`;
+}
+
 function scorersMarkup(progress) {
   if (!progress.scorers.length) return "";
   return `<section class="public-scorers"><header><span>DESTAQUES</span><strong>Pontuadores da competição</strong></header><div>${progress.scorers.map((item, index) => `<article><b>${index + 1}</b><span><strong>${esc(item.studentName)}</strong><small>${esc(item.className)}</small></span><em>${item.goals} ${item.goals === 1 ? "ponto" : "pontos"}</em></article>`).join("")}</div></section>`;
@@ -50,13 +55,16 @@ function bracketMarkup(bracket, payload) {
   if (bracket.automaticWinner) return `<div class="public-automatic"><span>Classificação automática</span>${team(bracket.automaticWinner)}<p>Única turma inscrita nesta competição.</p></div>`;
   const progress = competitionProgress(bracket, payload);
   if (bracket.format === "groups-knockout") return `${standingsMarkup(progress)}<div class="public-stage-title"><span>JOGOS DOS GRUPOS</span><strong>Cada turma enfrenta uma vez todas as demais do seu grupo</strong></div><div class="public-result-grid">${progress.groupMatches.map(playedMatch).join("")}</div><div class="public-stage-title"><span>MATA-MATA</span><strong>1º × 4º e 2º × 3º do grupo oposto</strong></div><div class="public-result-grid">${progress.knockoutMatches.map(playedMatch).join("")}</div>${scorersMarkup(progress)}`;
+  if (bracket.format === "league-knockout") return `${leagueStandingsMarkup(progress)}<div class="public-stage-title"><span>FASE CLASSIFICATÓRIA</span><strong>Tabela única: todos jogam contra todos e os 8 primeiros avançam</strong></div><div class="public-result-grid">${progress.groupMatches.map(playedMatch).join("")}</div><div class="public-stage-title"><span>MATA-MATA</span><strong>1º × 8º, 2º × 7º, 3º × 6º e 4º × 5º</strong></div><div class="public-result-grid">${progress.knockoutMatches.map(playedMatch).join("")}</div>${scorersMarkup(progress)}`;
   return `<div class="public-result-grid">${progress.knockoutMatches.map(playedMatch).join("")}</div>${scorersMarkup(progress)}`;
 }
 
 function drawCard([id, bracket], results) {
   const meta = competitionMeta(id);
-  const completed = Object.keys(results[id]?.matches || {}).length;
-  return `<details class="public-draw-card" data-draw-category="${esc(meta.category)}"><summary><span class="public-card-icon">${bracket.format === "groups-knockout" ? "A/B" : "×"}</span><span><small>${esc(meta.category)}</small><strong>${esc(meta.title)}</strong>${meta.subtitle ? `<em>${esc(meta.subtitle)}</em>` : ""}</span><span class="public-card-count">${completed ? `${completed} ${completed === 1 ? "resultado" : "resultados"}` : `${bracket.participantCount} ${bracket.participantCount === 1 ? "turma" : "turmas"}`} <b aria-hidden="true">⌄</b></span></summary><div class="public-bracket">${bracketMarkup(bracket, results[id] || { version: 1, matches: {} })}</div></details>`;
+  const payload = results[id] || { version: 1, matches: {} };
+  const progress = competitionProgress(bracket, payload);
+  const completed = [...progress.groupMatches, ...progress.knockoutMatches].filter((match) => match.complete).length;
+  return `<details class="public-draw-card" data-draw-category="${esc(meta.category)}"><summary><span class="public-card-icon">${bracket.format === "groups-knockout" ? "A/B" : bracket.format === "league-knockout" ? "1–8" : "×"}</span><span><small>${esc(meta.category)}</small><strong>${esc(meta.title)}</strong>${meta.subtitle ? `<em>${esc(meta.subtitle)}</em>` : ""}</span><span class="public-card-count">${completed ? `${completed} ${completed === 1 ? "resultado" : "resultados"}` : `${bracket.participantCount} ${bracket.participantCount === 1 ? "turma" : "turmas"}`} <b aria-hidden="true">⌄</b></span></summary><div class="public-bracket">${bracketMarkup(bracket, payload)}</div></details>`;
 }
 
 export async function mountPublicDraw(root) {

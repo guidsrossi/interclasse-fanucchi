@@ -65,7 +65,10 @@ export function mountResultsAdmin(root, { esc }) {
     const payload = results[selectedCompetition] || { version: 1, matches: {} };
     const progress = bracket ? competitionProgress(bracket, payload) : null;
     const matches = progress ? [...progress.groupMatches, ...progress.knockoutMatches] : [];
-    root.innerHTML = `<div class="results-admin-heading"><div><span class="eyebrow dark">PLACARES E PONTUADORES</span><h2>Lançamento de resultados</h2><p>Cada turma enfrenta uma vez as demais do grupo. Os resultados atualizam a página inicial e o ranking geral automaticamente.</p></div><label>Competição<select id="result-competition">${competitions.map(([id]) => option(esc(id), `${esc(metaFor(id).category)} · ${esc(metaFor(id).title)}`, id === selectedCompetition)).join("")}</select></label></div>${error ? `<p class="results-admin-error">${esc(error)}</p>` : ""}${matches.length ? `<div class="result-match-list">${matches.map(matchMarkup).join("")}</div>` : '<div class="empty">Nenhum jogo disponível.</div>'}`;
+    const stageDescription = bracket?.format === "league-knockout"
+      ? "No FIFA, todas as turmas se enfrentam na tabela única antes do mata-mata."
+      : "Cada turma enfrenta uma vez as demais do grupo.";
+    root.innerHTML = `<div class="results-admin-heading"><div><span class="eyebrow dark">PLACARES E PONTUADORES</span><h2>Lançamento de resultados</h2><p>${stageDescription} Os resultados atualizam a página inicial e o ranking geral automaticamente.</p></div><label>Competição<select id="result-competition">${competitions.map(([id]) => option(esc(id), `${esc(metaFor(id).category)} · ${esc(metaFor(id).title)}`, id === selectedCompetition)).join("")}</select></label></div>${error ? `<p class="results-admin-error">${esc(error)}</p>` : ""}${matches.length ? `<div class="result-match-list">${matches.map(matchMarkup).join("")}</div>` : '<div class="empty">Nenhum jogo disponível.</div>'}`;
     root.querySelector("#result-competition")?.addEventListener("change", (event) => { selectedCompetition = event.target.value; error = ""; render(); });
     root.querySelectorAll("form.result-match[data-match-id]").forEach((form) => {
       const match = matches.find((item) => item.id === form.dataset.matchId);

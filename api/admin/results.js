@@ -4,7 +4,7 @@ import { modalities } from "../../src/modalities.js";
 
 const headers = (key) => ({ "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` });
 const competitionIdPattern = /^[\p{L}\p{N}: _—-]{1,180}$/u;
-const matchIdPattern = /^(group-[AB]-\d+-\d+|ko-\d+-\d+)$/;
+const matchIdPattern = /^(group-[AB]-\d+-\d+|league-\d+-\d+|(?:league-)?ko-\d+-\d+)$/;
 const nonNegativeInteger = (value) => Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 999;
 
 export function normalizeScheduledAt(value) {
@@ -111,13 +111,13 @@ export default async function handler(req, res) {
         payload.matches[matchId] = { ...normalizeMatchResult(req.body?.result, match, students), ...(scheduledAt ? { scheduledAt } : {}) };
       } catch (error) { return res.status(400).json({ error: error.message }); }
     }
-    if (match.group) Object.keys(payload.matches).filter((id) => id.startsWith("ko-")).forEach((id) => {
+    if (match.group) Object.keys(payload.matches).filter((id) => /^(?:league-)?ko-/.test(id)).forEach((id) => {
       const scheduledAt = payload.matches[id]?.scheduledAt;
       if (scheduledAt) payload.matches[id] = { scheduledAt };
       else delete payload.matches[id];
     });
     else Object.keys(payload.matches).filter((id) => {
-      const round = Number(id.match(/^ko-(\d+)-/)?.[1]);
+      const round = Number(id.match(/^(?:league-)?ko-(\d+)-/)?.[1]);
       return Number.isInteger(round) && round > match.roundIndex;
     }).forEach((id) => {
       const scheduledAt = payload.matches[id]?.scheduledAt;

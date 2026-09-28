@@ -2,6 +2,16 @@ const score = (value) => Number.isInteger(Number(value)) && Number(value) >= 0 ?
 const matchResult = (payload, id) => payload?.matches?.[id] || {};
 
 export function createGroupMatches(bracket) {
+  if (bracket?.format === "league-knockout") {
+    const teams = bracket.teams || [];
+    const matches = [];
+    for (let home = 0; home < teams.length; home += 1) {
+      for (let away = home + 1; away < teams.length; away += 1) {
+        matches.push({ id: `league-${home}-${away}`, phase: "Fase classificatória", group: "league", home: teams[home], away: teams[away], knockout: false });
+      }
+    }
+    return matches;
+  }
   if (bracket?.format !== "groups-knockout") return [];
   return ["A", "B"].flatMap((group) => {
     const teams = bracket.groups?.[group] || [];
@@ -32,8 +42,10 @@ export function winnerFor(match, result) {
 export function buildGroupStandings(bracket, payload = {}) {
   const matches = createGroupMatches(bracket);
   const tables = {};
-  for (const group of ["A", "B"]) {
-    const rows = new Map((bracket?.groups?.[group] || []).map((className) => [className, {
+  const stages = bracket?.format === "league-knockout" ? ["league"] : ["A", "B"];
+  for (const group of stages) {
+    const stageTeams = group === "league" ? bracket?.teams : bracket?.groups?.[group];
+    const rows = new Map((stageTeams || []).map((className) => [className, {
       className, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
     }]));
     for (const match of matches.filter((item) => item.group === group)) {
@@ -51,7 +63,7 @@ export function buildGroupStandings(bracket, payload = {}) {
     tables[group] = [...rows.values()]
       .map((row) => ({ ...row, goalDifference: row.goalsFor - row.goalsAgainst }))
       .sort((a, b) => b.points - a.points || b.wins - a.wins || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor || a.className.localeCompare(b.className, "pt-BR"))
-      .map((row, index) => ({ ...row, position: index + 1, qualified: index < Math.min(bracket.qualifiersPerGroup || 4, rows.size) }));
+      .map((row, index) => ({ ...row, position: index + 1, qualified: index < Math.min(group === "league" ? bracket.qualifiers || 8 : bracket.qualifiersPerGroup || 4, rows.size) }));
   }
   return {
     tables,
@@ -61,23 +73,27 @@ export function buildGroupStandings(bracket, payload = {}) {
 
 function seedTeam(label, standings) {
   const match = String(label || "").match(/^(\d+)º do Grupo ([AB])$/);
-  return match ? standings?.tables?.[match[2]]?.[Number(match[1]) - 1]?.className || null : label || null;
+  if (match) return standings?.tables?.[match[2]]?.[Number(match[1]) - 1]?.className || null;
+  const leagueMatch = String(label || "").match(/^(\d+)º da Classificação$/);
+  return leagueMatch ? standings?.tables?.league?.[Number(leagueMatch[1]) - 1]?.className || null : label || null;
 }
 
 export function buildKnockoutMatches(bracket, payload = {}, standings = null) {
-  const knockout = bracket?.format === "groups-knockout" ? bracket.knockout : bracket;
+  const hasClassificationStage = ["groups-knockout", "league-knockout"].includes(bracket?.format);
+  const knockout = hasClassificationStage ? bracket.knockout : bracket;
   if (!knockout?.rounds?.length) return [];
-  const groupStageComplete = bracket?.format !== "groups-knockout" || standings?.complete;
+  const classificationComplete = !hasClassificationStage || standings?.complete;
+  const idPrefix = bracket?.format === "league-knockout" ? "league-ko" : "ko";
   const all = [];
   let previous = [];
   knockout.rounds.forEach((round, roundIndex) => {
     const current = round.matches.map((source, matchIndex) => {
-      const id = `ko-${roundIndex}-${matchIndex}`;
+      const id = `${idPrefix}-${roundIndex}-${matchIndex}`;
       const home = roundIndex === 0
-        ? (bracket.format === "groups-knockout" ? (groupStageComplete ? seedTeam(source.a, standings) : null) : source.a)
+        ? (hasClassificationStage ? (classificationComplete ? seedTeam(source.a, standings) : null) : source.a)
         : previous[matchIndex * 2]?.winner || null;
       const away = roundIndex === 0
-        ? (bracket.format === "groups-knockout" ? (groupStageComplete ? seedTeam(source.b, standings) : null) : source.b)
+        ? (hasClassificationStage ? (classificationComplete ? seedTeam(source.b, standings) : null) : source.b)
         : previous[matchIndex * 2 + 1]?.winner || null;
       const bye = roundIndex === 0 && Boolean(source.a && !source.b && home);
       const match = { id, phase: round.name, roundIndex, matchIndex, home, away, knockout: true, bye };
@@ -95,7 +111,7 @@ export function competitionProgress(bracket, payload = {}) {
     const result = matchResult(payload, match.id);
     return { ...match, result, complete: resultIsComplete(match, result) };
   });
-  const standings = bracket?.format === "groups-knockout" ? buildGroupStandings(bracket, payload) : null;
+  const standings = ["groups-knockout", "league-knockout"].includes(bracket?.format) ? buildGroupStandings(bracket, payload) : null;
   const knockoutMatches = buildKnockoutMatches(bracket, payload, standings);
   const final = knockoutMatches.at(-1);
   const champion = final?.winner || bracket?.automaticWinner || null;
@@ -105,7 +121,8 @@ export function competitionProgress(bracket, payload = {}) {
     .filter((match) => match.roundIndex === semifinalRound && match.complete)
     .map((match) => match.winner === match.home ? match.away : match.home)
     .filter(Boolean) : [];
-  const scorers = Object.values(payload?.matches || {}).flatMap((result) => result.scorers || []).reduce((all, item) => {
+  const currentMatchIds = new Set([...groupMatches, ...knockoutMatches].map((match) => match.id));
+  const scorers = Object.entries(payload?.matches || {}).filter(([id]) => currentMatchIds.has(id)).flatMap(([, result]) => result.scorers || []).reduce((all, item) => {
     if (!item?.studentName || !item?.className) return all;
     const key = `${item.className}|${item.studentName}`;
     const row = all.get(key) || { className: item.className, studentName: item.studentName, goals: 0 };

@@ -92,3 +92,30 @@ test("atribui 100 pontos para cada turma em empate de grupo", () => {
     { points: 100, draws: 1 },
   ]);
 });
+
+test("FIFA gera turno único, classifica oito e cruza primeiro com oitavo", () => {
+  const teams = Array.from({ length: 9 }, (_, index) => `Turma ${index + 1}`);
+  const bracket = {
+    format: "league-knockout", qualifiers: 8, teams,
+    knockout: { format: "knockout", rounds: [
+      { name: "Quartas de final", matches: [
+        { a: "1º da Classificação", b: "8º da Classificação" },
+        { a: "2º da Classificação", b: "7º da Classificação" },
+        { a: "3º da Classificação", b: "6º da Classificação" },
+        { a: "4º da Classificação", b: "5º da Classificação" },
+      ] },
+    ] },
+  };
+  const matches = createGroupMatches(bracket);
+  assert.equal(matches.length, 36);
+  const payload = { matches: Object.fromEntries(matches.map((match) => [match.id, {
+    homeScore: teams.indexOf(match.home) < teams.indexOf(match.away) ? 1 : 0,
+    awayScore: 0,
+  }])) };
+  const progress = competitionProgress(bracket, payload);
+  assert.equal(progress.standings.complete, true);
+  assert.equal(progress.standings.tables.league.filter((row) => row.qualified).length, 8);
+  assert.equal(progress.knockoutMatches[0].id, "league-ko-0-0");
+  assert.equal(progress.knockoutMatches[0].home, "Turma 1");
+  assert.equal(progress.knockoutMatches[0].away, "Turma 8");
+});

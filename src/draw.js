@@ -122,6 +122,35 @@ export function createGroupTournament(participants,random=Math.random){
  };
 }
 
+export function createLeagueTournament(participants,random=Math.random){
+ const teams=shuffle(participants.map(item=>typeof item==='string'?item:item.className),random);
+ if(teams.length<2)return createBracket(teams,random);
+ return {
+  format:'league-knockout',
+  participantCount:teams.length,
+  teams,
+  qualifiers:8,
+  knockout:{
+   format:'knockout',
+   participantCount:8,
+   automaticWinner:null,
+   rounds:[
+    {name:'Quartas de final',matches:[
+     {a:'1º da Classificação',b:'8º da Classificação',bye:false},
+     {a:'2º da Classificação',b:'7º da Classificação',bye:false},
+     {a:'3º da Classificação',b:'6º da Classificação',bye:false},
+     {a:'4º da Classificação',b:'5º da Classificação',bye:false}
+    ]},
+    {name:'Semifinais',matches:[
+     {a:'Vencedor das quartas 1',b:'Vencedor das quartas 2',bye:false},
+     {a:'Vencedor das quartas 3',b:'Vencedor das quartas 4',bye:false}
+    ]},
+    {name:'Final',matches:[{a:'Vencedor da semifinal 1',b:'Vencedor da semifinal 2',bye:false}]}
+   ]
+  }
+ };
+}
+
 export function createTournamentDraw(competitions,random=Math.random){
  return {
   version:3,
@@ -129,7 +158,11 @@ export function createTournamentDraw(competitions,random=Math.random){
   signature:competitionSignature(competitions),
   brackets:Object.fromEntries(competitions.map(competition=>[
    competition.id,
-   competition.category==='Coletivos'?createGroupTournament(competition.participants,random):createBracket(competition.participants,random)
+   competition.id==='fifa'
+    ?createLeagueTournament(competition.participants,random)
+    :competition.category==='Coletivos'
+     ?createGroupTournament(competition.participants,random)
+     :createBracket(competition.participants,random)
   ]))
  };
 }

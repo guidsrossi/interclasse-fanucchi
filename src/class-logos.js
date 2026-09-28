@@ -3,6 +3,7 @@ export const classLogos = Object.freeze({
   "1º E": "/class-logos/1e-onca.png",
   "2º A": "/class-logos/2a-segundao.png",
   "2º C": "/class-logos/2c-dragao.png",
+  "2º D": "/class-logos/2d-chapalokos.png",
   "3º B": "/class-logos/3b-cavalo.png",
   "3º C": "/class-logos/3c-zeus.png",
   "3º D": "/class-logos/3d-dragao.png",

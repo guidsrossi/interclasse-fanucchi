@@ -89,6 +89,8 @@ function bracketSummary(bracket, esc) {
     return `<div class="draw-card-result"><strong>${esc(bracket.automaticWinner)}</strong> avança automaticamente.</div>`;
   if (bracket.format === "groups-knockout")
     return `<div class="draw-card-result group-summary"><span><b>Grupo A</b> ${bracket.groups.A.map(esc).join(", ")}</span><span><b>Grupo B</b> ${bracket.groups.B.map(esc).join(", ")}</span><small>Os 4 primeiros de cada grupo avançam ao mata-mata.</small></div>`;
+  if (bracket.format === "league-knockout")
+    return `<div class="draw-card-result group-summary"><span><b>Tabela única</b> ${bracket.teams.map(esc).join(", ")}</span><small>Todos jogam contra todos; os 8 primeiros avançam ao mata-mata.</small></div>`;
   const matches = bracket.rounds[0]?.matches || [];
   return `<div class="draw-card-result">${matches.map((match) => (match.b ? `<span>${esc(match.a)} <b>×</b> ${esc(match.b)}</span>` : `<span>${esc(match.a)} <b>avança direto</b></span>`)).join("")}</div>`;
 }
@@ -135,18 +137,24 @@ function collectiveStageMarkup(bracket, state, esc) {
   return `<div class="presentation-rule suspense-rule"><strong>Sorteio dos grupos</strong><span>Uma turma por vez · os 4 melhores de cada grupo avançam</span></div><div class="suspense-arena">${groupMarkup("A")}<div class="draw-machine"><div class="draw-orbit orbit-one"></div><div class="draw-orbit orbit-two"></div><span class="machine-label">${revealed === revealOrder.length ? "GRUPOS DEFINIDOS" : revealed ? "ÚLTIMA SORTEADA" : "PRÓXIMA TURMA"}</span><div class="reveal-card ${last ? "has-result" : ""}"><small id="reveal-destination">${last ? `GRUPO ${last.group}` : "O destino será revelado"}</small><div id="reveal-team" class="reveal-team">${last ? teamIdentity(last.team, esc, "featured") : "?"}</div></div><div class="reveal-progress"><span style="width:${revealOrder.length ? (revealed / revealOrder.length) * 100 : 0}%"></span></div><p>${revealed} de ${revealOrder.length} turmas reveladas</p><div class="sparkles" aria-hidden="true"><i>✦</i><i>✧</i><i>✦</i><i>✧</i></div></div>${groupMarkup("B")}</div>`;
 }
 
+function leagueStageMarkup(bracket, esc) {
+  return `<div class="presentation-rule suspense-rule"><strong>Tabela única</strong><span>Todos jogam contra todos · os 8 primeiros avançam</span></div><div class="revealed-groups"><section><b>Participantes da fase classificatória</b><div>${bracket.teams.map((team) => teamIdentity(team, esc, "summary")).join("")}</div></section></div><div class="knockout-heading"><span>MATA-MATA</span><strong>1º × 8º, 2º × 7º, 3º × 6º e 4º × 5º</strong></div><div class="bracket-board collective-bracket">${bracket.knockout.rounds.map((round) => `<section class="bracket-round"><h3>${esc(round.name)}</h3><div>${round.matches.map((match) => matchMarkup(match, esc)).join("")}</div></section>`).join("")}</div>`;
+}
+
 function slideMarkup(competition, bracket, index, total, esc, state = {}) {
   let content = "";
   if (bracket.automaticWinner) {
     content = `<div class="automatic-winner"><span>Única turma inscrita</span><strong>${esc(bracket.automaticWinner)}</strong><p>Classificada automaticamente para esta competição.</p></div>`;
   } else if (bracket.format === "groups-knockout") {
     content = collectiveStageMarkup(bracket, state, esc);
+  } else if (bracket.format === "league-knockout") {
+    content = leagueStageMarkup(bracket, esc);
   } else {
     content = `<div class="bracket-board">${bracket.rounds.map((round) => `<section class="bracket-round"><h3>${esc(round.name)}</h3><div>${round.matches.map((match) => matchMarkup(match, esc)).join("")}</div></section>`).join("")}</div>`;
   }
   return `<div class="draw-slide">
   <header><div><span class="presentation-kicker">SORTEIO OFICIAL · ${esc(competition.category)}</span><h2>${esc(competition.title)}</h2>${competition.modalityName !== competition.title ? `<p>${esc(competition.modalityName)}</p>` : ""}</div><div class="slide-number">${index + 1}<small>/ ${total}</small></div></header>
-  <div class="presentation-entrants"><span>${competition.participants.length} ${competition.participants.length === 1 ? "turma inscrita" : "turmas inscritas"}</span>${bracket.format === "groups-knockout" ? "<em>A distribuição será revelada ao vivo</em>" : competition.participants.map((item) => teamIdentity(item.className, esc, "entrant")).join("")}</div>
+  <div class="presentation-entrants"><span>${competition.participants.length} ${competition.participants.length === 1 ? "turma inscrita" : "turmas inscritas"}</span>${bracket.format === "groups-knockout" ? "<em>A distribuição será revelada ao vivo</em>" : bracket.format === "league-knockout" ? "<em>Formato: Campeonato Paulista, em tabela única</em>" : competition.participants.map((item) => teamIdentity(item.className, esc, "entrant")).join("")}</div>
   ${content}
  </div>`;
 }
