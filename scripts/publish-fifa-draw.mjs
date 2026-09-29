@@ -11,7 +11,12 @@ const headers = {
   apikey: key,
   Authorization: `Bearer ${key}`,
 };
-const hash = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 16);
+const canonical = (value) => {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+  return value;
+};
+const hash = (value) => createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex").slice(0, 16);
 const request = async (path, options = {}) => {
   const response = await fetch(`${url}/rest/v1/${path}`, { ...options, headers: { ...headers, ...options.headers } });
   if (!response.ok) throw Error(`${options.method || "GET"} ${path}: ${response.status} ${await response.text()}`);
@@ -21,7 +26,7 @@ const request = async (path, options = {}) => {
 const [records, registrations, savedResults, rankingEntries] = await Promise.all([
   request("interclasse_draws?id=eq.official&select=payload,updated_at&limit=1"),
   request("interclasse_registrations?modality_id=eq.fifa&select=class_name&order=class_name.asc"),
-  request("interclasse_competition_results?competition_id=eq.fifa&select=competition_id&limit=1"),
+  request("interclasse_competition_results?competition_id=eq.fifa&select=competition_id,payload&limit=1"),
   request("interclasse_score_entries?competition_id=eq.fifa&source=eq.competition&select=id"),
 ]);
 const current = records[0]?.payload;
@@ -38,6 +43,9 @@ if (JSON.stringify(otherBefore) !== JSON.stringify(otherAfter)) throw Error("A v
 const report = {
   mode: apply ? "apply" : "dry-run",
   participantCount: teams.length,
+  currentFifaFormat: current.brackets.fifa.format,
+  currentFifaTeamOrder: current.brackets.fifa.teams || [],
+  currentFifaSavedMatches: Object.keys((savedResults[0]?.payload || {}).matches || {}).length,
   fifaBefore: hash(current.brackets.fifa),
   fifaAfter: hash(next.brackets.fifa),
   otherBracketsBefore: hash(otherBefore),
