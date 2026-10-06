@@ -9,6 +9,7 @@ import "./bye-advancement.css";
 import "./match-schedule.css";
 import { assetUrl, recoverImage } from "./assets.js";
 import { competitionProgress } from "./competition-results.js";
+import { orderLeagueMatchesForDisplay } from "./public-match-order.js";
 
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 
@@ -55,7 +56,7 @@ function bracketMarkup(bracket, payload) {
   if (bracket.automaticWinner) return `<div class="public-automatic"><span>Classificação automática</span>${team(bracket.automaticWinner)}<p>Única turma inscrita nesta competição.</p></div>`;
   const progress = competitionProgress(bracket, payload);
   if (bracket.format === "groups-knockout") return `${standingsMarkup(progress)}<div class="public-stage-title"><span>JOGOS DOS GRUPOS</span><strong>Cada turma enfrenta uma vez todas as demais do seu grupo</strong></div><div class="public-result-grid">${progress.groupMatches.map(playedMatch).join("")}</div><div class="public-stage-title"><span>MATA-MATA</span><strong>1º × 4º e 2º × 3º do grupo oposto</strong></div><div class="public-result-grid">${progress.knockoutMatches.map(playedMatch).join("")}</div>${scorersMarkup(progress)}`;
-  if (bracket.format === "league-knockout") return `${leagueStandingsMarkup(progress)}<div class="public-stage-title"><span>FASE CLASSIFICATÓRIA</span><strong>Tabela única: todos jogam contra todos e os 8 primeiros avançam</strong></div><div class="public-result-grid">${progress.groupMatches.map(playedMatch).join("")}</div><div class="public-stage-title"><span>MATA-MATA</span><strong>1º × 8º, 2º × 7º, 3º × 6º e 4º × 5º</strong></div><div class="public-result-grid">${progress.knockoutMatches.map(playedMatch).join("")}</div>${scorersMarkup(progress)}`;
+  if (bracket.format === "league-knockout") return `${leagueStandingsMarkup(progress)}<div class="public-stage-title"><span>FASE CLASSIFICATÓRIA</span><strong>Tabela única: todos jogam contra todos e os 8 primeiros avançam</strong></div><div class="public-result-grid">${orderLeagueMatchesForDisplay(progress.groupMatches).map(playedMatch).join("")}</div><div class="public-stage-title"><span>MATA-MATA</span><strong>1º × 8º, 2º × 7º, 3º × 6º e 4º × 5º</strong></div><div class="public-result-grid">${progress.knockoutMatches.map(playedMatch).join("")}</div>${scorersMarkup(progress)}`;
   return `<div class="public-result-grid">${progress.knockoutMatches.map(playedMatch).join("")}</div>${scorersMarkup(progress)}`;
 }
 
