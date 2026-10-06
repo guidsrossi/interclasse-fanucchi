@@ -18,6 +18,7 @@
 .ranking-history-list article strong{font-size:10px}
 .history-responsible{font-size:9px;color:#244f82}
 .history-responsible b{font-weight:800}
+.history-responsible.is-missing{color:#a15f26}
 .ranking-history-list article small{font-size:8px;color:#7c8da3}
 .ranking-history-list article em{text-align:right;color:#178053;font-size:11px;font-style:normal;font-weight:800}
 .ranking-history-list article em.is-negative{color:#c33d47}

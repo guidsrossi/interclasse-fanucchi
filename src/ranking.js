@@ -24,11 +24,14 @@ function historyMarkup(entries, ranking) {
     if (!grouped.has(entry.class_name)) grouped.set(entry.class_name, []);
     grouped.get(entry.class_name).push(entry);
   });
+  const responsibleMarkup = (entry) => entry.entry_type === "penalidade"
+    ? `<span class="history-responsible ${entry.responsible_student ? "" : "is-missing"}">Aluno responsável: <b>${esc(entry.responsible_student || "não informado")}</b></span>`
+    : "";
   const itemMarkup = (entry) => `<article>
     <span class="history-type ${entry.source === "competition" ? "is-game" : ""}">${esc(typeLabel[entry.entry_type] || entry.entry_type)}</span>
     <div>
       <strong>${esc(entry.label)}</strong>
-      ${entry.responsible_student ? `<span class="history-responsible">Aluno responsável: <b>${esc(entry.responsible_student)}</b></span>` : ""}
+      ${responsibleMarkup(entry)}
       <small>${entry.source === "competition" ? "Gerado pelo placar oficial" : entry.source === "teacher" ? "Registrado por professor" : "Lançado pela organização"} · ${new Date(entry.created_at).toLocaleString("pt-BR")}</small>
     </div>
     <em class="${Number(entry.points) < 0 ? "is-negative" : ""}">${Number(entry.points) > 0 ? "+" : ""}${entry.points} pts</em>
