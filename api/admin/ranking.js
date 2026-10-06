@@ -29,12 +29,15 @@ function weeklyAttendancePayload(body = {}) {
   return { p_week_start: weekStart, p_entries: entries };
 }
 
-function payload(body = {}) {
+export function scoreEntryPayload(body = {}) {
+  const entryType = String(body.entry_type || "");
+  const responsibleStudent = String(body.responsible_student || "").trim().replace(/\s+/g, " ");
   const item = {
     class_name: String(body.class_name || "").trim().toUpperCase(),
     modality_id: body.modality_id ? String(body.modality_id) : null,
-    entry_type: String(body.entry_type || ""),
+    entry_type: entryType,
     label: String(body.label || "").trim().replace(/\s+/g, " "),
+    responsible_student: entryType === "penalidade" ? responsibleStudent : null,
     points: Number(body.points),
     wins: Number(body.wins || 0),
     draws: Number(body.draws || 0),
@@ -44,6 +47,9 @@ function payload(body = {}) {
   if (!room.test(item.class_name) || !isSchoolClass(item.class_name)) throw Error("Informe uma turma existente.");
   if (!types.has(item.entry_type)) throw Error("Escolha um tipo de lançamento válido.");
   if (item.label.length < 3 || item.label.length > 120) throw Error("Descreva o lançamento entre 3 e 120 caracteres.");
+  if (item.entry_type === "penalidade" && (item.responsible_student.length < 3 || item.responsible_student.length > 100)) {
+    throw Error("Informe o aluno responsável pela penalidade.");
+  }
   if (![item.points, item.wins, item.draws, item.losses].every(Number.isInteger)) throw Error("Pontos e resultados devem ser números inteiros.");
   if (Math.abs(item.points) > 10000 || [item.wins, item.draws, item.losses].some((value) => value < 0 || value > 999)) throw Error("Os valores informados estão fora do limite permitido.");
   return item;
@@ -88,7 +94,7 @@ export default async function handler(req, res) {
     return data.length ? res.status(200).json({ ok: true }) : res.status(404).json({ error: "Lançamento não encontrado." });
   }
   let item;
-  try { item = payload(req.body); } catch (error) { return res.status(400).json({ error: error.message }); }
+  try { item = scoreEntryPayload(req.body); } catch (error) { return res.status(400).json({ error: error.message }); }
   const endpoint = req.method === "POST" ? `${url}/rest/v1/interclasse_score_entries` : `${url}/rest/v1/interclasse_score_entries?id=eq.${id}`;
   const response = await fetch(endpoint, {
     method: req.method,
